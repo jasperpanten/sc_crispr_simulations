@@ -265,54 +265,59 @@ library(sceptre)
 #   )
 
 # results from sam: 
-perturbations_sam <- read_csv("../data/gasperini_target_sites_Jasper_long.txt")[[1]]
-gasperini_data <- fst::read.fst("../data/resampling_results.fst") %>% 
-  dplyr::filter(target_site %in% perturbations_sam)
-
-gasperini_data %>%
-  group_by(target_site) %>% 
-  summarize(n = n())
-
-gasperini_data %>%
-  ggplot(aes(x = rejected, y = xi)) + geom_violin() + ylim(c(-2.5, 2.5))
+# perturbations_sam <- read_csv("../data/gasperini_target_sites_Jasper_long.txt")[[1]]
+# gasperini_data <- fst::read.fst("../data/resampling_results.fst") %>% 
+#   dplyr::filter(target_site %in% perturbations_sam)
+# 
+# gasperini_data %>%
+#   group_by(target_site) %>% 
+#   summarize(n = n())
+# 
+# gasperini_data %>%
+#   ggplot(aes(x = rejected, y = xi)) + geom_violin() + ylim(c(-2.5, 2.5))
 
 # perform power analysis with sceptre instead of mast
 library(EnsDb.Hsapiens.v86)
 library(tidyverse)
 
 data_here <- readRDS("../data/sce_gasperini_sam.rds")
-data_here <- logNormCounts(data_here)
-data_here <- fit_negbinom_deseq2(data_here)
+# data_here <- readRDS("../data/sce_gasperini_subset.rds")
 
-saveRDS(data_here, "../data/sce_gasperini_sam_dispersions.rds")
-data_here <- readRDS("../data/sce_gasperini_sam_dispersions.rds")
+perturbation_test <- c("chr1.7428_top_two", "chr1.9538_top_two")
+perturbation_test_collapsed <- paste0(perturbation_test, collapse = "|")
+cells_here <- grepl(perturbation_test_collapsed, data_here$gene)
+data_here_test <- data_here[ , cells_here]
+altExps(data_here_test)[["cre_pert"]] <- altExps(data_here)[["cre_pert"]][perturbation_test , cells_here]
 
-genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("gene_id" = "id") -> gene_coordinates
-rowData(data_here) <- rowData(data_here) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
+data_here_test <- logNormCounts(data_here_test)
+data_here_test <- fit_negbinom_deseq2(data_here_test)
 
-# data_here$target_id <- ifelse(grepl("ACTB_TSS", data_here$gene), "ACTB", "NTC")
-# data_here$target_gene <- "ENSG00000075624"
+saveRDS(data_here_test, "../data/sce_gasperini_sam_dispersions.rds")
+data_here_test <- readRDS("../data/sce_gasperini_sam_dispersions.rds")
 
-output <- simulate_diff_expr(data_here,
+genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("id" = "gene_id") -> gene_coordinates
+rowData(data_here) <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
+
+output <- simulate_diff_expr(data_here_test,
                              effect_size = .5,
                              pert_level = "cre_pert",
                              max_dist = NULL,
                              genes_iter = F,
                              guide_sd = 0,
                              center = FALSE,
-                             rep = 100,
+                             rep = 10,
                              norm = "real",
                              de_function = de_SCEPTRE,
                              formula = ~pert,
                              n_ctrl = F,
                              cell_batches = NULL)
 
-output %>%
-  group_by(gene, perturbation) %>%
-  mutate(padj = pvalue * 20000 * 20) %>%
-  summarize(
-    sig = sum(padj < .1),
-    nonsig = sum(padj >= .1)
-  ) %>% 
-  mutate(fraction_sig = sig / (sig + nonsig)) %>%
-  ggplot(aes(x = sig)) + geom_histogram()
+# output %>%
+#   group_by(gene, perturbation) %>%
+#   mutate(padj = pvalue * 20000 * 20) %>%
+#   summarize(
+#     sig = sum(padj < .1),
+#     nonsig = sum(padj >= .1)
+#   ) %>%
+#   mutate(fraction_sig = sig / (sig + nonsig)) %>%
+#   ggplot(aes(x = sig)) + geom_histogram()
