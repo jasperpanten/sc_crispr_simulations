@@ -266,6 +266,8 @@ simulate_diff_expr_pert_real <- function(pert, sce, pert_level, cell_batches, pe
   
   # combine output into one data.frame if simulations were run one perturbed gene at a time
   output <- bind_rows(output)
+
+  saveRDS(output, paste0("../processed_data/sim_res_0.5_", pert, ".rds"))
   
   return(output)
   
