@@ -280,6 +280,7 @@ simulate_pert_object_real <- function(pert_object, pert_genes, effect_size,
   pert <- unique(pert_object$pert_id)
   pert_genes <- rowData(altExps(pert_object)[["cre_pert"]][pert, ])$target_genes[[1]]
   pert_genes <- pert_genes[pert_genes %in% rownames(pert_object)]
+  pert_object <- pert_object[pert_genes, ]
   # effect sizes for selected of genes to perturb
   effect_sizes <- structure(rep(1, nrow(pert_object)), names = rownames(pert_object))
   effect_sizes[unlist(pert_genes)] <- effect_size
