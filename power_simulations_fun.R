@@ -266,6 +266,8 @@ simulate_diff_expr_pert_real <- function(pert, sce, pert_level, cell_batches, pe
   
   # combine output into one data.frame if simulations were run one perturbed gene at a time
   output <- bind_rows(output)
+
+  saveRDS(output, paste0("../processed_data/sim_res_0.5_", pert, ".rds"))
   
   return(output)
   
@@ -280,6 +282,7 @@ simulate_pert_object_real <- function(pert_object, pert_genes, effect_size,
   pert <- unique(pert_object$pert_id)
   pert_genes <- rowData(altExps(pert_object)[["cre_pert"]][pert, ])$target_genes[[1]]
   pert_genes <- pert_genes[pert_genes %in% rownames(pert_object)]
+  pert_object <- pert_object[pert_genes, ]
   # effect sizes for selected of genes to perturb
   effect_sizes <- structure(rep(1, nrow(pert_object)), names = rownames(pert_object))
   effect_sizes[unlist(pert_genes)] <- effect_size

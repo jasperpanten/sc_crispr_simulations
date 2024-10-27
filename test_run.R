@@ -3,7 +3,7 @@
 
 library(tidyr)
 
-setwd(paste0(dirname(rstudioapi::getSourceEditorContext()$path)))
+setwd("/cfs/klemming/projects/supr/lappalainen_lab1/users/panten/projects/sam_simulations/sc_crispr_simulations/")
 
 source("./differential_expression_fun.R")
 source("./power_simulations_fun.R")
@@ -236,7 +236,7 @@ source("./power_simulations_fun.R")
 # BiocManager::install("sceptre")
 
 # tutorial data
-library(sceptre)
+# library(sceptre)
 # library(sceptredata)
 # data(highmoi_example_data)
 # data(grna_target_data_frame_highmoi)
@@ -279,6 +279,7 @@ library(sceptre)
 # perform power analysis with sceptre instead of mast
 library(EnsDb.Hsapiens.v86)
 library(tidyverse)
+library(sceptre)
 
 data_here <- readRDS("../data/sce_gasperini_sam.rds")
 # data_here <- readRDS("../data/sce_gasperini_subset.rds")
@@ -289,14 +290,17 @@ cells_here <- grepl(perturbation_test_collapsed, data_here$gene)
 data_here_test <- data_here[ , cells_here]
 altExps(data_here_test)[["cre_pert"]] <- altExps(data_here)[["cre_pert"]][perturbation_test , cells_here]
 
+#data_here_test <- data_here
 data_here_test <- logNormCounts(data_here_test)
 data_here_test <- fit_negbinom_deseq2(data_here_test)
 
-saveRDS(data_here_test, "../data/sce_gasperini_sam_dispersions.rds")
-data_here_test <- readRDS("../data/sce_gasperini_sam_dispersions.rds")
+saveRDS(data_here_test, "../data/sce_gasperini_sam_dispersions_test.rds")
+data_here_test <- readRDS("../data/sce_gasperini_sam_dispersions_test.rds")
 
-genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("id" = "gene_id") -> gene_coordinates
-rowData(data_here) <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
+genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("gene_id" = "id") -> gene_coordinates
+rowData(data_here_test) <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
+
+saveRDS(data_here_test, "../data/sce_gasperini_sam_finished_test.rds")
 
 output <- simulate_diff_expr(data_here_test,
                              effect_size = .5,
@@ -305,12 +309,14 @@ output <- simulate_diff_expr(data_here_test,
                              genes_iter = F,
                              guide_sd = 0,
                              center = FALSE,
-                             rep = 10,
+                             rep = 1,
                              norm = "real",
                              de_function = de_SCEPTRE,
                              formula = ~pert,
                              n_ctrl = F,
                              cell_batches = NULL)
+
+# saveRDS(output, "../results/simulation_output.rds")
 
 # output %>%
 #   group_by(gene, perturbation) %>%
