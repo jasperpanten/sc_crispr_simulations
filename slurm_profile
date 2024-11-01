@@ -1,0 +1,29 @@
+cluster:
+  sbatch
+    --partition="memory:
+    --mem=10000
+    --job-name=smk-{rule}-{wildcards}
+    --output=logs/{rule}/{rule}-{wildcards}-%j.out
+    --error=logs/{rule}/{rule}-{wildcards}-.%j.err
+    --account=account
+    --ntasks=1
+    --nodes=1
+    --time={resources.runtime}
+    --parsable
+default-resources:
+  - partition=el7taskp
+  - qos=sbatch
+  - mem_mb=100000
+  - tmpdir=/users/user/tmp
+  - runtime=2880
+restart-times: 3
+max-jobs-per-second: 10
+max-status-checks-per-second: 1
+# local-cores: 40
+latency-wait: 60
+jobs: 1
+keep-going: True
+rerun-incomplete: True
+printshellcmds: True
+scheduler: greedy
+use-conda: True
