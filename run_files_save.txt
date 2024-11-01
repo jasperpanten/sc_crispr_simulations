@@ -1,0 +1,19 @@
+total 72
+-rw-r--r-- 1 panten pg_lappalainen_lab1  333 Oct 27 17:41 sim_res_0.5_chr1.10449_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  576 Oct 27 17:41 sim_res_0.5_chr1.10869_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  452 Oct 27 17:41 sim_res_0.5_chr1.11362_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  447 Oct 27 17:41 sim_res_0.5_chr1.11363_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  492 Oct 27 17:41 sim_res_0.5_chr1.11945_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  481 Oct 27 17:41 sim_res_0.5_chr1.12552_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  487 Oct 27 17:41 sim_res_0.5_chr1.12560_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  492 Oct 27 17:41 sim_res_0.5_chr1.12588_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1 1020 Oct 27 17:41 sim_res_0.5_chr1.3789_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  543 Oct 27 17:41 sim_res_0.5_chr1.4325_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  694 Oct 27 17:41 sim_res_0.5_chr1.5222_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  363 Oct 27 17:41 sim_res_0.5_chr1.6753_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  486 Oct 27 17:41 sim_res_0.5_chr1.7428_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  542 Oct 27 17:41 sim_res_0.5_chr1.7939_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  523 Oct 27 17:41 sim_res_0.5_chr1.7942_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  402 Oct 27 17:41 sim_res_0.5_chr1.8127_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1 1101 Oct 27 17:41 sim_res_0.5_chr1.8868_top_two.rds
+-rw-r--r-- 1 panten pg_lappalainen_lab1  640 Oct 27 17:41 sim_res_0.5_chr1.9538_top_two.rds

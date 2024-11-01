@@ -173,6 +173,14 @@ simulate_diff_expr <- function(sce, effect_size, pert_level, max_dist = NULL, ge
 simulate_diff_expr_rep <- function(pert, sim_function, rep, sce, pert_level, cell_batches,
                                    pert_input_function, guide_targets, genes_iter, effect_size,
                                    guide_sd, center, de_function, max_dist, formula, n_ctrl) {
+
+  output_file <- paste0("../processed_data/sim_res_", effect_size, "_", pert, ".rds")
+ 
+  if (file.exists(output_file)){
+	  print("Sim already run")
+	  output <- readRDS(output_file)
+  } else {
+
   
   # repeatedly simulate Perturb-seq data for given perturbation and perform DE tests
   output <- replicate(
@@ -187,6 +195,11 @@ simulate_diff_expr_rep <- function(pert, sim_function, rep, sce, pert_level, cel
   # combine output into one data.frame
   output <- bind_rows(output, .id = "iteration")
   output$iteration <- as.integer(output$iteration)
+  gc()
+
+  }
+
+  saveRDS(output, paste0("../processed_data/sim_res_", effect_size, "_", pert, ".rds"))
   
   return(output)
   
@@ -267,8 +280,6 @@ simulate_diff_expr_pert_real <- function(pert, sce, pert_level, cell_batches, pe
   # combine output into one data.frame if simulations were run one perturbed gene at a time
   output <- bind_rows(output)
 
-  saveRDS(output, paste0("../processed_data/sim_res_0.5_", pert, ".rds"))
-  
   return(output)
   
 }

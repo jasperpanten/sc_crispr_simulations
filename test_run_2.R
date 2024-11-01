@@ -9,7 +9,7 @@ source("./power_simulations_fun.R")
 effect_size <- .5
 reps <- 10
 
-data_here_test <- readRDS("../data/sce_gasperini_sam_finished_test.rds")
+data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 
 output <- simulate_diff_expr(data_here_test,
                              effect_size = effect_size,
