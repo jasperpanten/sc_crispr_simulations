@@ -89,7 +89,7 @@ fit_negbinom_deseq2 <- function(sce, assay = "counts",
 #' @param cell_batches (optional) Column name in colData specifying batch for each cell. If
 #'   specified control cells are sampled from these batches with equal proportions as perturbed
 #'   cells.
-simulate_diff_expr <- function(sce, effect_size, pert_level, max_dist = NULL, genes_iter = FALSE,
+simulate_diff_expr <- function(sce, effect_size, pert_level, pert_test, max_dist = NULL, genes_iter = FALSE,
                                guide_sd = 0, center = FALSE, rep = 1,
                                norm = c("real", "sim_nonpert"), de_function = de_MAST,
                                formula = ~ pert, n_ctrl = 5000, cell_batches = NULL) {
@@ -147,8 +147,10 @@ simulate_diff_expr <- function(sce, effect_size, pert_level, max_dist = NULL, ge
   # guide_targets <- guide_targets[!is.na(guide_targets$target_id), ]
   
   # create vector of perturbations to test
-  perts <- rownames(altExp(sce, pert_level))
-  names(perts) <- perts
+  #perts <- rownames(altExp(sce, pert_level))
+  #names(perts) <- perts
+  perts <- pert_test
+  names(perts) <- pert_test
   # perts <- unique(setNames(guide_targets$target_id, guide_targets$target_id))
 
   # simulate Perturb-seq data and perform DE tests for every perturbation
@@ -174,14 +176,13 @@ simulate_diff_expr_rep <- function(pert, sim_function, rep, sce, pert_level, cel
                                    pert_input_function, guide_targets, genes_iter, effect_size,
                                    guide_sd, center, de_function, max_dist, formula, n_ctrl) {
 
-  output_file <- paste0("../processed_data/sim_res_", effect_size, "_", pert, ".rds")
+  #output_file <- paste0("../processed_data/sim_res_", effect_size, "_", pert, ".rds")
  
-  if (file.exists(output_file)){
-	  print("Sim already run")
-	  output <- readRDS(output_file)
-  } else {
+  #if (file.exists(output_file)){
+  #	  print("Sim already run")
+  #	  output <- readRDS(output_file)
+  #} else {
 
-  
   # repeatedly simulate Perturb-seq data for given perturbation and perform DE tests
   output <- replicate(
     n = rep,
@@ -197,9 +198,9 @@ simulate_diff_expr_rep <- function(pert, sim_function, rep, sce, pert_level, cel
   output$iteration <- as.integer(output$iteration)
   gc()
 
-  }
+  
 
-  saveRDS(output, paste0("../processed_data/sim_res_", effect_size, "_", pert, ".rds"))
+  #saveRDS(output, paste0("../processed_data/sim_res_", effect_size, "_", pert, ".rds"))
   
   return(output)
   

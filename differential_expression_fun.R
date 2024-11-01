@@ -358,9 +358,13 @@ de_SCEPTRE <- function(sim_object, formula = ~pert,
   test %>%
     run_discovery_analysis(
       parallel = F,
-      n_processors = "auto"
+      n_processors = "auto",
+      log_dir = "~/tmp/sceptre"
     ) -> sceptre_object
   res <- sceptre_object@discovery_result
+
+  rm(sceptre_object)
+  gc()
   
   # combine log fold changes and p-values to create output
   output <- res[ , c("response_id", "grna_target", "log_2_fold_change", "p_value") ]
