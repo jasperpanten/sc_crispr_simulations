@@ -4,7 +4,6 @@
 library(tidyr)
 
 setwd(paste0(dirname(rstudioapi::getSourceEditorContext()$path)))
-# setwd("/cfs/klemming/projects/supr/lappalainen_lab1/users/panten/projects/sam_simulations/sc_crispr_simulations/")
 
 source("./differential_expression_fun.R")
 source("./power_simulations_fun.R")
@@ -237,7 +236,7 @@ source("./power_simulations_fun.R")
 # BiocManager::install("sceptre")
 
 # tutorial data
-# library(sceptre)
+library(sceptre)
 # library(sceptredata)
 # data(highmoi_example_data)
 # data(grna_target_data_frame_highmoi)
@@ -277,42 +276,34 @@ source("./power_simulations_fun.R")
 # gasperini_data %>%
 #   ggplot(aes(x = rejected, y = xi)) + geom_violin() + ylim(c(-2.5, 2.5))
 
+# 
+
+
 # perform power analysis with sceptre instead of mast
 library(EnsDb.Hsapiens.v86)
 library(tidyverse)
-library(sceptre)
 
-#data_here <- readRDS("../data/sce_gasperini_sam.rds")
+data_here <- readRDS("../data/sce_gasperini_sam.rds")
 # data_here <- readRDS("../data/sce_gasperini_subset.rds")
 
-#perturbation_test <- c("chr1.7428_top_two", "chr1.9538_top_two")
-#perturbation_test_collapsed <- paste0(perturbation_test, collapse = "|")
-#cells_here <- grepl(perturbation_test_collapsed, data_here$gene)
-#data_here_test <- data_here[ , cells_here]
-#altExps(data_here_test)[["cre_pert"]] <- altExps(data_here)[["cre_pert"]][perturbation_test , cells_here]
+perturbation_test <- c("chr1.7428_top_two", "chr1.9538_top_two")
+perturbation_test_collapsed <- paste0(perturbation_test, collapse = "|")
+cells_here <- grepl(perturbation_test_collapsed, data_here$gene)
+data_here_test <- data_here[ , cells_here]
+altExps(data_here_test)[["cre_pert"]] <- altExps(data_here)[["cre_pert"]][perturbation_test , cells_here]
 
-#data_here_test <- data_here
-#data_here_test <- logNormCounts(data_here_test)
-#data_here_test <- fit_negbinom_deseq2(data_here_test)
+data_here_test <- logNormCounts(data_here_test)
+data_here_test <- fit_negbinom_deseq2(data_here_test)
 
-#saveRDS(data_here_test, "../data/sce_gasperini_sam_dispersions_test.rds")
+saveRDS(data_here_test, "../data/sce_gasperini_sam_dispersions.rds")
 data_here_test <- readRDS("../data/sce_gasperini_sam_dispersions.rds")
 
-genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("gene_id" = "id") -> gene_coordinates
-data_here_test <- data_here_test[rownames(data_here_test) %in% gene_coordinates$id, ]
+genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("id" = "gene_id") -> gene_coordinates
+rowData(data_here) <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
 
-row_data_temp <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
-rowRanges(data_here_test) <- makeGRangesFromDataFrame(data.frame(seqnames = row_data_temp$seqnames, start = row_data_temp$start, end = row_data_temp$end, row.names = rownames(row_data_temp)))
-rowData(data_here_test) <- row_data_temp
-
-saveRDS(data_here_test, "../data/sce_gasperini_sam_finished.rds")
-
-data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
-
-output <- simulate_diff_expr(sce = data_here_test,
+output <- simulate_diff_expr(data_here_test,
                              effect_size = .5,
                              pert_level = "cre_pert",
-                             pert_test = "chr1.7428_top_two",
                              max_dist = NULL,
                              genes_iter = F,
                              guide_sd = 0,
@@ -323,8 +314,6 @@ output <- simulate_diff_expr(sce = data_here_test,
                              formula = ~pert,
                              n_ctrl = F,
                              cell_batches = NULL)
-
-# saveRDS(output, "../results/simulation_output.rds")
 
 # output %>%
 #   group_by(gene, perturbation) %>%
