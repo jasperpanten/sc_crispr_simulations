@@ -3,7 +3,8 @@
 
 library(tidyr)
 
-setwd("/cfs/klemming/projects/supr/lappalainen_lab1/users/panten/projects/sam_simulations/sc_crispr_simulations/")
+setwd(paste0(dirname(rstudioapi::getSourceEditorContext()$path)))
+# setwd("/cfs/klemming/projects/supr/lappalainen_lab1/users/panten/projects/sam_simulations/sc_crispr_simulations/")
 
 source("./differential_expression_fun.R")
 source("./power_simulations_fun.R")
@@ -306,14 +307,17 @@ rowData(data_here_test) <- row_data_temp
 
 saveRDS(data_here_test, "../data/sce_gasperini_sam_finished.rds")
 
-output <- simulate_diff_expr(data_here_test,
+data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
+
+output <- simulate_diff_expr(sce = data_here_test,
                              effect_size = .5,
                              pert_level = "cre_pert",
+                             pert_test = "chr1.7428_top_two",
                              max_dist = NULL,
                              genes_iter = F,
                              guide_sd = 0,
                              center = FALSE,
-                             rep = 1,
+                             rep = 10,
                              norm = "real",
                              de_function = de_SCEPTRE,
                              formula = ~pert,
