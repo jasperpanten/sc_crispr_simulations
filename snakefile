@@ -1,6 +1,7 @@
 #!/bin/python -l
 
-# run as snakemake -s snakefile --use-envmodules --executor slurm --default-resources slurm_account=naiss2023-5-517 slurm_partition=shared --jobs 1
+# run as 
+# snakemake -s snakefile --use-envmodules --executor slurm --default-resources slurm_account=naiss2023-5-517 slurm_partition=shared --jobs 1
 
 import pandas as pd
 import pdb
@@ -22,6 +23,7 @@ rule run_simulation:
         "PDC/23.12",
         "R/4.4.1-cpeGNU-23.12",
     resources:
-        #mem_mb=40000,
+        #mem_mb=100000,
+        #disk_mb=100000,
         slurm_partition="shared",
     shell: "Rscript test_run_3.R {wildcards.effect_size} 20 {wildcards.cre} {wildcards.rep}"
