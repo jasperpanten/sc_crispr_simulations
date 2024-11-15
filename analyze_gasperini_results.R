@@ -15,4 +15,3 @@ gasperini %>%
   summarize(n_sig = sum(pvalue < p_adj_cutoff), n_non_sig = sum(pvalue >= p_adj_cutoff)) %>%
   mutate(frac_sig = n_sig / (n_sig + n_non_sig)) %>%
   ggplot(aes(x = frac_sig)) + geom_histogram(bins = 20)
-

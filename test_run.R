@@ -298,7 +298,7 @@ library(sceptre)
 #saveRDS(data_here_test, "../data/sce_gasperini_sam_dispersions_test.rds")
 data_here_test <- readRDS("../data/sce_gasperini_sam_dispersions.rds")
 
-genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("gene_id" = "id") -> gene_coordinates
+genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("id" = "gene_id") -> gene_coordinates
 data_here_test <- data_here_test[rownames(data_here_test) %in% gene_coordinates$id, ]
 
 row_data_temp <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
@@ -310,16 +310,16 @@ saveRDS(data_here_test, "../data/sce_gasperini_sam_finished.rds")
 data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 
 output <- simulate_diff_expr(sce = data_here_test,
-                             effect_size = .5,
+                             effect_size = .1,
                              pert_level = "cre_pert",
-                             pert_test = "chr1.7428_top_two",
+                             pert_test = NULL,
                              max_dist = NULL,
                              genes_iter = F,
                              guide_sd = 0,
                              center = FALSE,
-                             rep = 10,
+                             rep = 50,
                              norm = "real",
-                             de_function = de_SCEPTRE,
+                             de_function = de_DESeq,
                              formula = ~pert,
                              n_ctrl = F,
                              cell_batches = NULL)

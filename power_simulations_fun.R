@@ -149,8 +149,15 @@ simulate_diff_expr <- function(sce, effect_size, pert_level, pert_test, max_dist
   # create vector of perturbations to test
   #perts <- rownames(altExp(sce, pert_level))
   #names(perts) <- perts
-  perts <- pert_test
-  names(perts) <- pert_test
+  if (is.null(pert_test)){
+    perts <- rownames(altExps(sce)[["cre_pert"]])
+    names(perts) <- perts
+  } else {
+    perts <- pert_test
+    names(perts) <- pert_test
+  }
+  
+  print(perts)
   # perts <- unique(setNames(guide_targets$target_id, guide_targets$target_id))
 
   # simulate Perturb-seq data and perform DE tests for every perturbation
@@ -192,13 +199,11 @@ simulate_diff_expr_rep <- function(pert, sim_function, rep, sce, pert_level, cel
                                   genes_iter = genes_iter, effect_size = effect_size, guide_sd = guide_sd, center = center,
                                   de_function = de_function, max_dist = max_dist, formula = formula, n_ctrl = n_ctrl),
     simplify = FALSE)
-  
+
   # combine output into one data.frame
   output <- bind_rows(output, .id = "iteration")
   output$iteration <- as.integer(output$iteration)
   gc()
-
-  
 
   #saveRDS(output, paste0("../processed_data/sim_res_", effect_size, "_", pert, ".rds"))
   
@@ -294,7 +299,7 @@ simulate_pert_object_real <- function(pert_object, pert_genes, effect_size,
   pert <- unique(pert_object$pert_id)
   pert_genes <- rowData(altExps(pert_object)[["cre_pert"]][pert, ])$target_genes[[1]]
   pert_genes <- pert_genes[pert_genes %in% rownames(pert_object)]
-  #pert_object <- pert_object[pert_genes, ]
+  pert_object <- pert_object[pert_genes, ]
   # effect sizes for selected of genes to perturb
   effect_sizes <- structure(rep(1, nrow(pert_object)), names = rownames(pert_object))
   effect_sizes[unlist(pert_genes)] <- effect_size
@@ -322,6 +327,10 @@ simulate_pert_object_real <- function(pert_object, pert_genes, effect_size,
   norm_factors <- colData(sim_object)[, "size_factors"]
   assay(sim_object, "normcounts") <- t(t(assay(sim_object, "counts")) / norm_factors)
   assay(sim_object, "logcounts") <- log1p(assay(sim_object, "normcounts"))
+  
+  # clean up
+  # rm(list = c("pert_object", "effect_sizes", "es_mat"))
+  # gc()
   
   # perform differential gene expression test
   output <- de_function(sim_object, formula = formula)
