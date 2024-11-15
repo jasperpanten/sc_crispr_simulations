@@ -31,7 +31,7 @@ output <- simulate_diff_expr(data_here_test,
                              center = FALSE,
                              rep = reps,
                              norm = "real",
-                             de_function = de_SCEPTRE,
+                             de_function = de_DESeq,
                              formula = ~pert,
                              n_ctrl = F,
                              cell_batches = NULL)

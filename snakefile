@@ -7,7 +7,7 @@ import pandas as pd
 import pdb
 
 effect_sizes = [0.5]
-reps = [1, 2]
+reps = [1]
 
 cres_to_run = pd.read_csv("../processed_data/cre_names_gasperini.txt")["x"]
 cres_to_run = cres_to_run.to_numpy()
@@ -23,7 +23,7 @@ rule run_simulation:
         "PDC/23.12",
         "R/4.4.1-cpeGNU-23.12",
     resources:
-        #mem_mb=100000,
-        #disk_mb=100000,
+        mem_mb=100000,
+        disk_mb=100000,
         slurm_partition="shared",
-    shell: "Rscript test_run_3.R {wildcards.effect_size} 20 {wildcards.cre} {wildcards.rep}"
+    shell: "Rscript test_run_3.R {wildcards.effect_size} 50 {wildcards.cre} {wildcards.rep}"
