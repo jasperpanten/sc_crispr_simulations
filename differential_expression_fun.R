@@ -375,10 +375,16 @@ de_SCEPTRE <- function(sim_object, formula = ~pert,
   return(output)
 }
 
-de_DESeq <- function(x){
-  NULL
+de_DESeq <- function(sim_object, formula = ~pert){
+  
+  deseq_obj <- DESeqDataSet(SummarizedExperiment(assays = as.matrix(counts(sim_object)), colData = colData(sim_object)), design = formula)
+  dispersions(deseq_obj) <- rowData(sim_object)$dispersion
+  sizeFactors(deseq_obj) <- sim_object$size_factors
+  deseq_obj <- nbinomWaldTest(deseq_obj)
+  output <- results(deseq_obj, tidy = T) %>% rename("row" = "gene") %>% dplyr::select(c("gene", "baseMean", "log2FoldChange", "pvalue"))
+  return(output)
+  
 }
-
 
 #' DEsingle DE function
 #' 
