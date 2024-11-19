@@ -12,6 +12,7 @@ reps = [1]
 cres_to_run = pd.read_csv("../processed_data/cre_names_gasperini.txt")["x"]
 cres_to_run = cres_to_run.to_numpy()
 cres_to_run = cres_to_run[[1]]
+cres_to_run = "all"
 
 rule all:
     input:
@@ -23,7 +24,8 @@ rule run_simulation:
         "PDC/23.12",
         "R/4.4.1-cpeGNU-23.12",
     resources:
-        mem_mb=100000,
-        disk_mb=100000,
+        mem_mb=50000,
+        disk_mb=50000,
+        runtime=1440,
         slurm_partition="shared",
-    shell: "Rscript test_run_3.R {wildcards.effect_size} 50 {wildcards.cre} {wildcards.rep}"
+    shell: "Rscript test_run_3.R {wildcards.effect_size} 5 {wildcards.cre} {wildcards.rep}"

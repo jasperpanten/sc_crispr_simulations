@@ -14,17 +14,24 @@ reps <- as.numeric(args[[2]])
 pert_here <- as.character(args[[3]])
 repetition <- as.numeric(args[[4]])
 
+#effect_size <- 0.5
+#reps <- 10
+#pert_here <- "chr1.7428_top_two"
+#repetition <- 1
+
 print(effect_size)
 print(reps)
 print(pert_here)
 
 data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 
+# pert_to_run <- ifelse(pert_here == "all", NULL, pert_here)
+
 # split across perturbations: 
 output <- simulate_diff_expr(data_here_test,
                              effect_size = effect_size,
                              pert_level = "cre_pert",
-                             pert_test = pert_here,
+                             pert_test = NULL,
                              max_dist = NULL,
                              genes_iter = F,
                              guide_sd = 0,
