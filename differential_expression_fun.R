@@ -537,6 +537,27 @@ pert_input <- function(pert, sce, pert_level, ...) {
   
 }
 
+# generate input for all perturbations simultaneously
+pert_input_pooled <- function(pert, sce, pert_level, ...) {
+  
+  # message("Creating input for perturbation '", pert, "'.")
+  
+  # get perturbed cells for specified perturbation
+  pert_data <- assay(altExp(sce, pert_level), "perts")
+  
+  # pert_data <- pert_data[pert, ]
+  
+  # add perturbation status as first column to colData
+  pert_status <- DataFrame(pert = as.factor(pert_data[colnames(sce)]))
+  colData(sce) <- cbind(pert_status, colData(sce))
+  
+  # add perturbation id and perturbation level as metadata
+  metadata(sce) <- c(metadata(sce), pert_id = pert, pert_level = pert_level)
+  
+  return(sce)
+  
+}
+
 # generate input for one perturbation
 pert_input_sampled <- function(pert, sce, pert_level, cell_batches, n_ctrl) {
   
