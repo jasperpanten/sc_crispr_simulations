@@ -363,13 +363,63 @@ de_SCEPTRE <- function(sim_object, formula = ~pert,
     ) -> sceptre_object
   res <- sceptre_object@discovery_result
 
-  rm(sceptre_object)
-  gc()
-  
   # combine log fold changes and p-values to create output
   output <- res[ , c("response_id", "grna_target", "log_2_fold_change", "p_value") ]
   # colnames(output) <- c("gene", "logFC", "ci_high", "ci_low", "pvalue")
   colnames(output) <- c("gene", "", "logFC", "pvalue")
+  output <- output[order(output$pvalue), ]
+  
+  return(output)
+}
+
+de_SCEPTRE_pooled <- function(sim_object, formula = ~pert, 
+                       pvalue = c("standard"),
+                       parallel = FALSE) {
+  
+  # parse input arguments
+  # pvalue <- match.arg(pvalue)
+  
+  # pert <- unique(sim_object$pert_id)
+  grna_matrix_here <- counts(altExps(sim_object)[["cre_pert"]]) * 100
+  colnames(grna_matrix_here) <- colnames(sim_object)
+  rownames(grna_matrix_here) <- rownames(altExps(sim_object)[["cre_pert"]])
+  
+  grna_target_data_frame <- data.frame(grna_target = rownames(grna_matrix_here), grna_id = rownames(grna_matrix_here))
+  
+  suppressWarnings({
+  sceptre_object <- import_data(
+    response_matrix = as.matrix(counts(sim_object)),
+    grna_matrix = grna_matrix_here,
+    grna_target_data_frame = grna_target_data_frame,
+    moi = "low"
+  )
+  
+  discovery_pairs <- rowData(altExps(sim_object)[["cre_pert"]]) %>%
+    data.frame() %>%
+    rename("cre_target" = "grna_target", "target_genes" = "response_id") %>%
+    unnest_longer(response_id) %>% 
+    dplyr::filter(response_id %in% rownames(sim_object))
+  
+  sceptre_object %>%
+    set_analysis_parameters(
+      discovery_pairs = discovery_pairs, 
+      control_group = "complement"
+    ) %>%
+    assign_grnas(method = "maximum") %>%
+    run_qc(n_nonzero_trt_thresh = 0, n_nonzero_cntrl_thresh = 0, response_n_umis_range = c(0, 1), response_n_nonzero_range = c(0, 1), p_mito_threshold = 0) -> test
+  })
+  test %>%
+    run_discovery_analysis(
+      parallel = F,
+      n_processors = "auto",
+      log_dir = "~/tmp/sceptre"
+    ) -> sceptre_object
+  res <- sceptre_object@discovery_result
+  
+  # combine log fold changes and p-values to create output
+  output <- res[ , c("response_id", "grna_target", "log_2_fold_change", "p_value") ]
+  # colnames(output) <- c("gene", "logFC", "ci_high", "ci_low", "pvalue")
+  colnames(output) <- c("gene", "cre_pert", "logFC", "pvalue")
   output <- output[order(output$pvalue), ]
   
   return(output)

@@ -220,7 +220,7 @@ simulate_diff_expr_pooled <- function(sce, effect_size, pert_level, pert_test, m
   
   # get simulation function based on norm argument
   if (norm == "real") {
-    sim_function <- simulate_diff_expr_pert_real
+    sim_function <- simulate_diff_expr_pert_real_pooled
   } else if (norm == "sim_nonpert") {
     sim_function <- simulate_diff_expr_pert_sim
   } else {
@@ -244,7 +244,6 @@ simulate_diff_expr_pooled <- function(sce, effect_size, pert_level, pert_test, m
     names(perts) <- pert_test
   }
   
-  print(perts)
   # perts <- unique(setNames(guide_targets$target_id, guide_targets$target_id))
   
   # simulate Perturb-seq data and perform DE tests for every perturbation
@@ -257,7 +256,7 @@ simulate_diff_expr_pooled <- function(sce, effect_size, pert_level, pert_test, m
   
   # combine output into one data.frame and rearrange columns
   output <- bind_rows(output, .id = "perturbation")
-  output <- relocate(output, iteration, perturbation, gene, perturbed)
+  # output <- relocate(output, iteration, perturbation, gene, perturbed)
   
   return(output)
   
@@ -270,13 +269,6 @@ simulate_diff_expr_pooled <- function(sce, effect_size, pert_level, pert_test, m
 simulate_diff_expr_rep <- function(pert, sim_function, rep, sce, pert_level, cell_batches,
                                    pert_input_function, guide_targets, genes_iter, effect_size,
                                    guide_sd, center, de_function, max_dist, formula, n_ctrl) {
-
-  #output_file <- paste0("../processed_data/sim_res_", effect_size, "_", pert, ".rds")
- 
-  #if (file.exists(output_file)){
-  #	  print("Sim already run")
-  #	  output <- readRDS(output_file)
-  #} else {
 
   # repeatedly simulate Perturb-seq data for given perturbation and perform DE tests
   output <- replicate(
@@ -425,7 +417,7 @@ simulate_pert_object_real <- function(pert_object, pert_genes, effect_size,
   
 }
 
-simulate_diff_expr_pert_real_pooled <- function(sce, pert_level, cell_batches, pert_input_function,
+simulate_diff_expr_pert_real_pooled <- function(pert, sce, pert_level, cell_batches, pert_input_function,
                                          guide_targets, genes_iter, effect_size, guide_sd, center,
                                          de_function, max_dist, formula, n_ctrl) {
   
@@ -447,7 +439,7 @@ simulate_diff_expr_pert_real_pooled <- function(sce, pert_level, cell_batches, p
   # grna_pert_status <- create_guide_pert_status(pert_status, grna_perts = grna_perts,
   #                                              pert_guides = pert_guides)
   
-  grna_pert_status <- pert_status
+  # grna_pert_status <- pert_status
   
   # only retain genes within maximum distance if specified
   if (!is.null(max_dist)) {
@@ -458,11 +450,11 @@ simulate_diff_expr_pert_real_pooled <- function(sce, pert_level, cell_batches, p
   # simulate perturb-seq data and perform differential expression test either all genes at once or
   # one gene at a time
   message("Simulating differential expression.")
-  pert_genes <- rowData(altExps(pert_object)[["cre_pert"]])[pert_guides, ]$target_genes[[1]]
-  pert_genes <- pert_genes[pert_genes %in% rownames(pert_object)][[1]]
-  if (genes_iter == FALSE) pert_genes <- list(pert_genes)
+  # pert_genes <- rowData(altExps(pert_object)[["cre_pert"]])[pert_guides, ]$target_genes[[1]]
+  # pert_genes <- pert_genes[pert_genes %in% rownames(pert_object)][[1]]
+  # if (genes_iter == FALSE) pert_genes <- list(pert_genes)
   
-  output <- lapply(pert_genes, FUN = simulate_pert_object_real, pert_object = pert_object,
+  output <- lapply(1, FUN = simulate_pert_object_real_pooled, pert_object = pert_object,
                    effect_size = effect_size, grna_pert_status = grna_pert_status,
                    pert_guides = pert_guides, guide_sd = guide_sd, center = center,
                    pert_status = pert_status, de_function = de_function, formula = formula)
@@ -479,7 +471,7 @@ simulate_pert_object_real_pooled <- function(pert_object, pert_genes, effect_siz
                                       pert_status, de_function, formula) {
   
   # pert <- unique(pert_object$pert_id)
-  pert_genes <- rowData(altExps(pert_object)[["cre_pert"]][pert, ])$target_genes[[1]]
+  #pert_genes <- rowData(altExps(pert_object)[["cre_pert"]][pert, ])$target_genes[[1]]
   # pert_genes <- pert_genes[pert_genes %in% rownames(pert_object)]
   # pert_object <- pert_object[pert_genes, ]
   # effect sizes for selected of genes to perturb
@@ -497,7 +489,7 @@ simulate_pert_object_real_pooled <- function(pert_object, pert_genes, effect_siz
   
   es_mat <- t(counts(altExps(pert_object)[["cre_pert"]])) %*% effect_size_matrix
   es_mat <- t(1 - es_mat * (1 - effect_size))
-  es_mat <- pmax(es_mat, 0)
+  es_mat <- as.matrix(pmax(es_mat, 0))
   
   # scale to effect_size
   # effect_size_matrix <- 1 - colSums(effect_size_matrix) * effect_size
@@ -535,13 +527,14 @@ simulate_pert_object_real_pooled <- function(pert_object, pert_genes, effect_siz
   # gc()
   
   # perform differential gene expression test
-  output <- de_function(sim_object, formula = formula)
-  
+  output <- de_SCEPTRE_pooled(sim_object, formula = formula)
+
   # add column labeling genes that were perturbed
-  output$perturbed <- output$gene %in% pert_genes
-  
+  output <- output %>% 
+    group_by(cre_pert) %>%
+    mutate(perturbed = gene %in% rowData(altExps(sim_object)[["cre_pert"]])[unique(cre_pert), ]$target_genes[[1]])
+
   return(output)
-  
 }
 
 ## Simulate perturb-seq data and perform DE tests with simulated size factors and cell stats -------

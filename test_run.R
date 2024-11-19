@@ -309,29 +309,29 @@ saveRDS(data_here_test, "../data/sce_gasperini_sam_finished.rds")
 
 data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 
-output <- simulate_diff_expr(sce = data_here_test,
-                             effect_size = .1,
-                             pert_level = "cre_pert",
-                             pert_test = NULL,
-                             max_dist = NULL,
-                             genes_iter = F,
-                             guide_sd = 0,
-                             center = FALSE,
-                             rep = 50,
-                             norm = "real",
-                             de_function = de_DESeq,
-                             formula = ~pert,
-                             n_ctrl = F,
-                             cell_batches = NULL)
+output <- simulate_diff_expr_pooled(sce = data_here_test,
+                                    effect_size = .9,
+                                    pert_level = "cre_pert",
+                                    pert_test = NULL,
+                                    max_dist = NULL,
+                                    genes_iter = F,
+                                    guide_sd = 0,
+                                    center = FALSE,
+                                    rep = 1,
+                                    norm = "real",
+                                    de_function = de_SCEPTRE_pooled,
+                                    formula = ~pert,
+                                    n_ctrl = F,
+                                    cell_batches = NULL)
 
 # saveRDS(output, "../results/simulation_output.rds")
 
-# output %>%
-#   group_by(gene, perturbation) %>%
-#   mutate(padj = pvalue * 20000 * 20) %>%
-#   summarize(
-#     sig = sum(padj < .1),
-#     nonsig = sum(padj >= .1)
-#   ) %>%
-#   mutate(fraction_sig = sig / (sig + nonsig)) %>%
-#   ggplot(aes(x = sig)) + geom_histogram()
+output %>%
+  group_by(gene, perturbation) %>%
+  mutate(padj = pvalue * 20000 * 20) %>%
+  summarize(
+    sig = sum(padj < .1),
+    nonsig = sum(padj >= .1)
+  ) %>%
+  mutate(fraction_sig = sig / (sig + nonsig)) %>%
+  ggplot(aes(x = sig)) + geom_histogram()
