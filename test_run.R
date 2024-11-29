@@ -296,42 +296,110 @@ library(sceptre)
 #data_here_test <- fit_negbinom_deseq2(data_here_test)
 
 #saveRDS(data_here_test, "../data/sce_gasperini_sam_dispersions_test.rds")
-data_here_test <- readRDS("../data/sce_gasperini_sam_dispersions.rds")
+# data_here_test <- readRDS("../data/sce_gasperini_sam_dispersions.rds")
+# 
+# genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("id" = "gene_id") -> gene_coordinates
+# data_here_test <- data_here_test[rownames(data_here_test) %in% gene_coordinates$id, ]
+# 
+# row_data_temp <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
+# rowRanges(data_here_test) <- makeGRangesFromDataFrame(data.frame(seqnames = row_data_temp$seqnames, start = row_data_temp$start, end = row_data_temp$end, row.names = rownames(row_data_temp)))
+# rowData(data_here_test) <- row_data_temp
+# 
+# saveRDS(data_here_test, "../data/sce_gasperini_sam_finished.rds")
 
-genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("id" = "gene_id") -> gene_coordinates
-data_here_test <- data_here_test[rownames(data_here_test) %in% gene_coordinates$id, ]
+# data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
+sce <- readRDS("~/Desktop/sce_gasperini_sam_.rds")
 
-row_data_temp <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
-rowRanges(data_here_test) <- makeGRangesFromDataFrame(data.frame(seqnames = row_data_temp$seqnames, start = row_data_temp$start, end = row_data_temp$end, row.names = rownames(row_data_temp)))
-rowData(data_here_test) <- row_data_temp
-
-saveRDS(data_here_test, "../data/sce_gasperini_sam_finished.rds")
-
-data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
-
-output <- simulate_diff_expr_pooled(sce = data_here_test,
-                                    effect_size = .9,
+output <- simulate_diff_expr_pooled(sce = sce,
+                                    effect_size = .5,
                                     pert_level = "cre_pert",
                                     pert_test = NULL,
                                     max_dist = NULL,
                                     genes_iter = F,
                                     guide_sd = 0,
                                     center = FALSE,
-                                    rep = 1,
+                                    rep = 10,
                                     norm = "real",
                                     de_function = de_SCEPTRE_pooled,
                                     formula = ~pert,
                                     n_ctrl = F,
                                     cell_batches = NULL)
 
-# saveRDS(output, "../results/simulation_output.rds")
+saveRDS(output, "../results/simulation_output.rds")
 
 output %>%
-  group_by(gene, perturbation) %>%
-  mutate(padj = pvalue * 20000 * 20) %>%
+  group_by(gene, cre_pert) %>%
+  # mutate(padj = pvalue * 20000 * 20) %>%
+  mutate(padj = pvalue) %>%
   summarize(
     sig = sum(padj < .1),
     nonsig = sum(padj >= .1)
   ) %>%
   mutate(fraction_sig = sig / (sig + nonsig)) %>%
   ggplot(aes(x = sig)) + geom_histogram()
+
+# read output 
+
+output_new <- readRDS("~/Desktop/sim_res_all_0.5_1.rds")
+output_new$effect_size <- 0.5
+
+n_tests <- output_new %>%
+  group_by(gene, cre_pert, effect_size) %>% 
+  summarize(n = n()) %>% nrow()
+
+output_new %>%
+  dplyr::filter(!is.na(pvalue)) %>%
+  mutate(padj = pvalue * n_tests) %>%
+  group_by(gene, cre_pert, effect_size) %>%
+  summarize(
+    sig = sum(padj < .1),
+    nonsig = sum(padj >= .1)
+  ) %>% 
+  mutate(fraction_sig = sig / (sig + nonsig)) -> output_processed 
+
+output_processed %>%
+  ungroup() %>%
+  group_by(effect_size, fraction_sig) %>%
+  summarize(n_hits = n()) %>% 
+  arrange(-fraction_sig) %>%
+  mutate(n_total = cumsum(n_hits)) %>%
+  ungroup() %>%
+  mutate(fraction_total = n_total / max(n_total)) %>%
+  add_row(effect_size = unique(.$effect_size), fraction_sig = 0, fraction_total = 1) %>%
+  add_row(effect_size = unique(.$effect_size), fraction_sig = 1, fraction_total = 0) %>%
+  ggplot(aes(x = fraction_total, y = fraction_sig, col = as.factor(effect_size))) + geom_line() + xlim(c(0, 1)) + ylim(c(0, 1)) + 
+    geom_hline(yintercept = 0.8, linetype = 'dashed')
+  
+
+# check how power depends on detection stats: 
+
+gene_stats <- data.frame(
+  gene = rownames(data_here_test),
+  mean = rowData(data_here_test)$mean, 
+  dispersion = rowData(data_here_test)$dispersion
+)
+
+gene_stats %>% 
+  ggplot(aes(x = mean, y = dispersion)) + geom_point() + scale_x_log10() + scale_y_log10()
+
+output_processed %>% 
+  left_join(gene_stats) %>%
+  mutate(is_powered = fraction_sig > .8) %>%
+  mutate(mean = log10(mean + 1)) %>%
+  mutate(mean = cut(mean, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
+  # mutate(mean = cut_number(mean, n = 10))  %>%
+  ggplot(aes(x = mean, fill = is_powered)) + geom_bar(position = "fill")
+  
+output_processed %>% 
+  left_join(gene_stats) %>%
+  mutate(is_powered = fraction_sig > .8) %>%
+  mutate(dispersion = log10(dispersion + 1)) %>%
+  mutate(dispersion = cut(dispersion, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
+  ggplot(aes(x = dispersion, fill = is_powered)) + geom_bar(position = "fill")
+
+output_processed %>% 
+  left_join(gene_stats) %>%
+  mutate(is_powered = fraction_sig > .8) %>%
+  #mutate(dispersion = log10(dispersion + 1)) %>%
+  #mutate(dispersion = cut(dispersion, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
+  ggplot(aes(x = mean, y = dispersion, col = is_powered)) + geom_point() + scale_x_log10() + scale_y_log10()

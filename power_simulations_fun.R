@@ -424,7 +424,7 @@ simulate_diff_expr_pert_real_pooled <- function(pert, sce, pert_level, cell_batc
   # create input object for DE tests
   # pert_object <- pert_input_function(pert, sce = sce, pert_level = pert_level,
   #                                    cell_batches = cell_batches, n_ctrl = n_ctrl)
-  pert_object <- sce
+  # pert_object <- sce
   # pert_object$pert_id <- pert
   
   # get perturbation status and gRNA perturbations for all cells
@@ -443,7 +443,7 @@ simulate_diff_expr_pert_real_pooled <- function(pert, sce, pert_level, cell_batc
   
   # only retain genes within maximum distance if specified
   if (!is.null(max_dist)) {
-    pert_object <- filt_max_dist_pert(pert_object, pert_level = pert_level, pert = pert,
+    pert_object <- filt_max_dist_pert(sce, pert_level = pert_level, pert = pert,
                                       max_dist = max_dist)
   }
   
@@ -454,7 +454,7 @@ simulate_diff_expr_pert_real_pooled <- function(pert, sce, pert_level, cell_batc
   # pert_genes <- pert_genes[pert_genes %in% rownames(pert_object)][[1]]
   # if (genes_iter == FALSE) pert_genes <- list(pert_genes)
   
-  output <- lapply(1, FUN = simulate_pert_object_real_pooled, pert_object = pert_object,
+  output <- lapply(1, FUN = simulate_pert_object_real_pooled, sce = sce,
                    effect_size = effect_size, grna_pert_status = grna_pert_status,
                    pert_guides = pert_guides, guide_sd = guide_sd, center = center,
                    pert_status = pert_status, de_function = de_function, formula = formula)
@@ -466,7 +466,7 @@ simulate_diff_expr_pert_real_pooled <- function(pert, sce, pert_level, cell_batc
   
 }
 
-simulate_pert_object_real_pooled <- function(pert_object, pert_genes, effect_size,
+simulate_pert_object_real_pooled <- function(sce, pert_genes, effect_size,
                                       grna_pert_status, pert_guides, guide_sd, center,
                                       pert_status, de_function, formula) {
   
@@ -475,56 +475,40 @@ simulate_pert_object_real_pooled <- function(pert_object, pert_genes, effect_siz
   # pert_genes <- pert_genes[pert_genes %in% rownames(pert_object)]
   # pert_object <- pert_object[pert_genes, ]
   # effect sizes for selected of genes to perturb
-  n_genes <- nrow(pert_object)
-  n_perts <- nrow(altExps(pert_object)[["cre_pert"]])
+  n_genes <- nrow(sce)
+  n_perts <- nrow(altExps(sce)[["cre_pert"]])
   effect_size_matrix <- matrix(rep(0, n_perts * n_genes), ncol = n_genes)
-  rownames(effect_size_matrix) <- rownames(altExps(pert_object)[["cre_pert"]])
-  colnames(effect_size_matrix) <- rownames(pert_object)
+  rownames(effect_size_matrix) <- rownames(altExps(sce)[["cre_pert"]])
+  colnames(effect_size_matrix) <- rownames(sce)
   
-  for (pert in rownames(altExps(pert_object)[["cre_pert"]])){
-    genes_target = unlist(rowData(altExps(pert_object)[["cre_pert"]][pert, ])$target_genes)
+  for (pert in rownames(altExps(sce)[["cre_pert"]])){
+    genes_target = unlist(rowData(altExps(sce)[["cre_pert"]][pert, ])$target_genes)
     genes_target = genes_target[genes_target %in% colnames(effect_size_matrix)]
     effect_size_matrix[pert, genes_target] <- 1
   }
   
-  es_mat <- t(counts(altExps(pert_object)[["cre_pert"]])) %*% effect_size_matrix
-  es_mat <- t(1 - es_mat * (1 - effect_size))
-  es_mat <- as.matrix(pmax(es_mat, 0))
+  es_mat <- t(as(effect_size_matrix, "sparseMatrix")) %*% counts(altExps(sce)[["cre_pert"]]) # element 1 for every gene affected in a cell
+  es_mat <- es_mat * (1 - effect_size) # replace 1 with (1 - effect_size)
+  # es_mat <- as.matrix(pmax(es_mat, 0))
   
-  # scale to effect_size
-  # effect_size_matrix <- 1 - colSums(effect_size_matrix) * effect_size
-  # effect_size_matrix <- unlist(lapply(effect_size_matrix, function(x){max(x, 0)}))
+  # sim_counts <- simulate_tapseq_counts(gene_means = rowData(pert_object)[, "mean"],
+  #                                      gene_dispersions = rowData(pert_object)[, "dispersion"],
+  #                                      cell_size_factors = colData(pert_object)[, "size_factors"],
+  #                                      effect_size_mat = es_mat)
   
-  # effect_sizes <- structure(rep(1, nrow(pert_object)), names = rownames(pert_object))
-  # effect_sizes[unlist(pert_genes)] <- effect_size
-  # 
-  # create effect size matrix
-  # es_mat <- create_effect_size_matrix(as.numeric(grna_pert_status), pert_guides = pert_guides,
-  #                                     gene_effect_sizes = effect_sizes, guide_sd = guide_sd)
-  
-  # set guide variability for non-perturbed guide-gene pairs
-  # TODO: implement this in create_effect_size_matrix
-  # es_mat[, pert_status == 0] <- 1
-  # es_mat[!rownames(es_mat) %in% pert_genes, ] <- 1
-  
-  # center effect sizes on specified gene-level effect sizes
-  # if (center == TRUE) {
-  #   es_mat <- center_effect_size_matrix(es_mat, pert_status = pert_status,
-  #                                       gene_effect_sizes = effect_sizes)
-  # }
+  sim_object <- simulate_tapseq_counts_sparse(gene_means = rowData(sce)[, "mean"],
+                                              gene_dispersions = rowData(sce)[, "dispersion"],
+                                              cell_size_factors = colData(sce)[, "size_factors"],
+                                              effect_size_mat = es_mat)
   
   # simulate Perturb-seq count data
-  sim_object <- sim_tapseq_sce(pert_object, effect_size_mat = es_mat)
-  altExps(sim_object) <- altExps(pert_object)
+  #sim_object <- sim_tapseq_sce(pert_object, effect_size_mat = es_mat)
+  altExps(sim_object) <- altExps(sce)
   
   # normalize counts using real data normalization factors and log transform
   norm_factors <- colData(sim_object)[, "size_factors"]
-  assay(sim_object, "normcounts") <- t(t(assay(sim_object, "counts")) / norm_factors)
-  assay(sim_object, "logcounts") <- log1p(assay(sim_object, "normcounts"))
-  
-  # clean up
-  # rm(list = c("pert_object", "effect_sizes", "es_mat"))
-  # gc()
+  #assay(sim_object, "normcounts") <- t(t(assay(sim_object, "counts")) / norm_factors)
+  #assay(sim_object, "logcounts") <- log1p(assay(sim_object, "normcounts"))
   
   # perform differential gene expression test
   output <- de_SCEPTRE_pooled(sim_object, formula = formula)
@@ -717,6 +701,42 @@ simulate_tapseq_counts <- function(gene_means, gene_dispersions, cell_size_facto
   # simulate counts
   Matrix(rnbinom(n_cells * n_genes, mu = mu, size = 1 / gene_dispersions), ncol = n_cells,
          dimnames = list(gene_ids, cell_ids))
+  
+}
+
+simulate_tapseq_counts_sparse <- function(gene_means, gene_dispersions, cell_size_factors, effect_size_mat,
+                                          gene_ids = names(gene_means),
+                                          cell_ids = names(cell_size_factors)) {
+  
+  # number of genes and cells
+  n_genes <- length(gene_means)
+  n_cells <- length(cell_size_factors)
+  
+  # make mu matrix for simulation
+  # mu <- matrix(rep(gene_means, n_cells), ncol = n_cells)
+  # mu <- sweep(mu, 2, cell_size_factors, "*")  # add cell-to-cell variability based on size factors
+  
+  sim_results <- MatrixExtra::emptySparse(n_genes, n_cells, format = "R")
+  
+  # simulate seperately per gene
+  for (g in (1:n_genes)){
+    mu <- matrix(rep(gene_means[[g]], n_cells), ncol = n_cells)
+    mu <- sweep(mu, 2, cell_size_factors, "*")
+    
+    # inject perturbation effects by element-wise product of mu and effect_size_mat
+    effect_sizes_gene = pmax(1 - effect_size_mat[g, ], 0) # invert effect size again, so it is 1 for unperturbed, es for perturbed (eg 0.9 for 90%)
+    mu <- mu * effect_sizes_gene
+    
+    # simulate counts
+    sim_counts = as.numeric(rnbinom(n_cells, mu = mu, size = 1 / gene_dispersions))
+    # sim_results[g, sim_counts != 0] = sim_counts[sim_counts != 0]
+    non_zero_values = sim_counts[sim_counts > 0]
+    non_zero_indices = which(sim_counts > 0)
+    sim_results[g, ] = sparseVector(non_zero_values, non_zero_indices, length = n_cells)
+  }
+  
+  rownames(sim_results) <- gene_ids
+  colnames(sim_results) <- cell_ids
   
 }
 
