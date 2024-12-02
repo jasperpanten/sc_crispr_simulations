@@ -23,9 +23,12 @@ print(effect_size)
 print(reps)
 print(pert_here)
 
-data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
+print("gets here 1")
 
-# pert_to_run <- ifelse(pert_here == "all", NULL, pert_here)
+# data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
+data_here_test <- readRDS("../data/sce_gasperini_sam_finished_test.rds")
+
+print("gets here 2")
 
 # split across perturbations: 
 output <- simulate_diff_expr(data_here_test,
@@ -43,4 +46,4 @@ output <- simulate_diff_expr(data_here_test,
                              n_ctrl = F,
                              cell_batches = NULL)
 
-saveRDS(output, paste0("../results/gasperini_results/sim_res_", pert_here, "_", effect_size, "_", repetition, ".rds"))
+#saveRDS(output, paste0("../results/gasperini_results/sim_res_", pert_here, "_", effect_size, "_", repetition, ".rds"))

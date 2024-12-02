@@ -480,6 +480,8 @@ simulate_pert_object_real_pooled <- function(sce, pert_genes, effect_size,
   effect_size_matrix <- matrix(rep(0, n_perts * n_genes), ncol = n_genes)
   rownames(effect_size_matrix) <- rownames(altExps(sce)[["cre_pert"]])
   colnames(effect_size_matrix) <- rownames(sce)
+
+  print("making effect size matrix")
   
   for (pert in rownames(altExps(sce)[["cre_pert"]])){
     genes_target = unlist(rowData(altExps(sce)[["cre_pert"]][pert, ])$target_genes)
@@ -495,20 +497,30 @@ simulate_pert_object_real_pooled <- function(sce, pert_genes, effect_size,
   #                                      gene_dispersions = rowData(pert_object)[, "dispersion"],
   #                                      cell_size_factors = colData(pert_object)[, "size_factors"],
   #                                      effect_size_mat = es_mat)
+
+  print("simulating counts")
   
   sim_object <- simulate_tapseq_counts_sparse(gene_means = rowData(sce)[, "mean"],
                                               gene_dispersions = rowData(sce)[, "dispersion"],
                                               cell_size_factors = colData(sce)[, "size_factors"],
                                               effect_size_mat = es_mat)
+
+
+  sim_object <- SingleCellExperiment(assays = list(counts = sim_object), rowData = rowData(sce),
+                                     colData = colData(sce))
   
   # simulate Perturb-seq count data
   #sim_object <- sim_tapseq_sce(pert_object, effect_size_mat = es_mat)
   altExps(sim_object) <- altExps(sce)
+
+  print("test")
   
   # normalize counts using real data normalization factors and log transform
   norm_factors <- colData(sim_object)[, "size_factors"]
   #assay(sim_object, "normcounts") <- t(t(assay(sim_object, "counts")) / norm_factors)
   #assay(sim_object, "logcounts") <- log1p(assay(sim_object, "normcounts"))
+
+  print("going into pooled function")
   
   # perform differential gene expression test
   output <- de_SCEPTRE_pooled(sim_object, formula = formula)
@@ -737,6 +749,8 @@ simulate_tapseq_counts_sparse <- function(gene_means, gene_dispersions, cell_siz
   
   rownames(sim_results) <- gene_ids
   colnames(sim_results) <- cell_ids
+
+  return(sim_results)
   
 }
 

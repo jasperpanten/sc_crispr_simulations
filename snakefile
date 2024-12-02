@@ -6,6 +6,7 @@
 import pandas as pd
 import pdb
 
+effect_sizes = [0.9, 0.8, 0.7, 0.6, 0.5]
 effect_sizes = [0.5]
 reps = [1]
 
@@ -24,8 +25,8 @@ rule run_simulation:
         "PDC/23.12",
         "R/4.4.1-cpeGNU-23.12",
     resources:
-        mem_mb=50000,
-        disk_mb=50000,
-        runtime=1440,
+        mem_mb=100000,
+        runtime=720,
+        #cpus_per_task=8,
         slurm_partition="shared",
-    shell: "Rscript test_run_3.R {wildcards.effect_size} 5 {wildcards.cre} {wildcards.rep}"
+    shell: "Rscript test_run_5.R {wildcards.effect_size} 1 {wildcards.cre} {wildcards.rep}"

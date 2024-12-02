@@ -380,6 +380,7 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
   # pvalue <- match.arg(pvalue)
   
   # pert <- unique(sim_object$pert_id)
+  print("starting de setup")
   grna_matrix_here <- counts(altExps(sim_object)[["cre_pert"]]) * 100
   colnames(grna_matrix_here) <- colnames(sim_object)
   rownames(grna_matrix_here) <- rownames(altExps(sim_object)[["cre_pert"]])
@@ -408,6 +409,7 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
     assign_grnas(method = "maximum") %>%
     run_qc(n_nonzero_trt_thresh = 0, n_nonzero_cntrl_thresh = 0, response_n_umis_range = c(0, 1), response_n_nonzero_range = c(0, 1), p_mito_threshold = 0) -> test
   })
+  print("test genes")
   test %>%
     run_discovery_analysis(
       parallel = F,
