@@ -7,8 +7,7 @@ import pandas as pd
 import pdb
 
 effect_sizes = [0.9, 0.8, 0.7, 0.6, 0.5]
-effect_sizes = [0.5]
-reps = [1]
+reps = [1, 2, 3, 4, 5]
 
 cres_to_run = pd.read_csv("../processed_data/cre_names_gasperini.txt")["x"]
 cres_to_run = cres_to_run.to_numpy()
@@ -17,16 +16,16 @@ cres_to_run = "all"
 
 rule all:
     input:
-        expand("../results/gasperini_results/sim_res_{cre}_{effect_size}_{rep}.rds", cre = cres_to_run, effect_size = effect_sizes, rep = reps)
+        expand("../results/gasperini_results/sim_sceptre_res_{cre}_{effect_size}_{rep}.rds", cre = cres_to_run, effect_size = effect_sizes, rep = reps)
 
 rule run_simulation:
-    output: "../results/gasperini_results/sim_res_{cre}_{effect_size}_{rep}.rds",
+    output: "../results/gasperini_results/sim_sceptre_res_{cre}_{effect_size}_{rep}.rds",
     envmodules:
         "PDC/23.12",
         "R/4.4.1-cpeGNU-23.12",
     resources:
-        mem_mb=100000,
-        runtime=720,
+        mem_mb=50000,
+        runtime=360,
         #cpus_per_task=8,
         slurm_partition="shared",
     shell: "Rscript test_run_5.R {wildcards.effect_size} 1 {wildcards.cre} {wildcards.rep}"
