@@ -506,25 +506,38 @@ simulate_pert_object_real_pooled <- function(sce, pert_genes, effect_size,
                                               effect_size_mat = es_mat)
 
 
+  set.seed(1234)
   sim_object <- SingleCellExperiment(assays = list(counts = sim_object), rowData = rowData(sce),
                                      colData = colData(sce))
   
   # simulate Perturb-seq count data
   #sim_object <- sim_tapseq_sce(pert_object, effect_size_mat = es_mat)
   altExps(sim_object) <- altExps(sce)
-
-  print("test")
   
   # normalize counts using real data normalization factors and log transform
   norm_factors <- colData(sim_object)[, "size_factors"]
   #assay(sim_object, "normcounts") <- t(t(assay(sim_object, "counts")) / norm_factors)
   #assay(sim_object, "logcounts") <- log1p(assay(sim_object, "normcounts"))
+  
+  # lapply(rownames(altExps(sim_object)[["cre_pert"]]), function(perty){
+  #   cells_pert = counts(altExps(sim_object)[["cre_pert"]])[perty, ] == 1
+  #   fcs = log2(rowMeans(counts(sim_object[ , cells_pert]))) - log2(rowMeans(counts(sim_object[ , ! cells_pert])))
+  #   data.frame(
+  #     pert = perty, 
+  #     gene = rownames(sim_object),
+  #     fcs = fcs,
+  #     perturbed = rownames(sim_object) %in% unlist(rowData(altExps(sim_object)[["cre_pert"]])[perty, ]$target_genes)
+  #   )
+  # }) %>% do.call("rbind", .) -> testytest
+  
+  # testytest %>% 
+  #   ggplot(aes(x = perturbed, y = fcs)) + geom_violin() + stat_summary()
 
   print("going into pooled function")
   
   # perform differential gene expression test
   output <- de_SCEPTRE_pooled(sim_object, formula = formula)
-
+  
   # add column labeling genes that were perturbed
   output <- output %>% 
     group_by(cre_pert) %>%

@@ -388,6 +388,7 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
   grna_target_data_frame <- data.frame(grna_target = rownames(grna_matrix_here), grna_id = rownames(grna_matrix_here))
   
   suppressWarnings({
+  
   sceptre_object <- import_data(
     response_matrix = as.matrix(counts(sim_object)),
     grna_matrix = grna_matrix_here,
@@ -397,9 +398,12 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
   
   discovery_pairs <- rowData(altExps(sim_object)[["cre_pert"]]) %>%
     data.frame() %>%
-    rename("cre_target" = "grna_target", "target_genes" = "response_id") %>%
+    # rename("cre_target" = "grna_target", "target_genes" = "response_id") %>%
+    rename("grna_target" = "cre_target", "response_id" = "target_genes") %>%
     unnest_longer(response_id) %>% 
     dplyr::filter(response_id %in% rownames(sim_object))
+  
+  sceptre_object@covariate_data_frame <- sceptre_object@covariate_data_frame[c("response_n_nonzero", "response_n_umis", "grna_n_nonzero")]
   
   sceptre_object %>%
     set_analysis_parameters(
