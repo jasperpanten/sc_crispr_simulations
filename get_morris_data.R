@@ -34,6 +34,18 @@ system(
   paste0("ln -sf ", data_dir, "GSE171452_RAW/GSM5225859_STINGseq-v1_GDO.matrix.mtx", " ", data_dir, "/morris_1_gdo/matrix.mtx")
 )
 
+# HTOs: 
+system(
+  paste0("ln -sf ", data_dir, "GSE171452_RAW/GSM5225858_STINGseq-v1_HTO.barcodes.tsv", " ", data_dir, "/morris_1_hto/barcodes.tsv")
+)
+system(
+  paste0("ln -sf ", data_dir, "GSE171452_RAW/GSM5225858_STINGseq-v1_HTO.features.tsv", " ", data_dir, "/morris_1_hto/features.tsv")
+)
+system(
+  paste0("ln -sf ", data_dir, "GSE171452_RAW/GSM5225858_STINGseq-v1_HTO.matrix.mtx", " ", data_dir, "/morris_1_hto/matrix.mtx")
+)
+
+# add gdo data
 morris_dataset_1_gdo <- read10xCounts("~/Desktop/PostDoc_TL_Lab/Projects/Sam/data/morris_1_gdo/")
 morris_dataset_1_gdo <- morris_dataset_1_gdo[grepl("SNP", rownames(morris_dataset_1_gdo)), ]
 
@@ -46,6 +58,19 @@ morris_dataset_1 <- morris_dataset_1[ , joint_cells]
 morris_dataset_1_gdo <- morris_dataset_1_gdo[ , joint_cells]
 
 altExps(morris_dataset_1)[["cre_pert"]] <- morris_dataset_1_gdo
+
+# add hto data
+morris_dataset_1_hto <- read10xCounts("~/Desktop/PostDoc_TL_Lab/Projects/Sam/data/morris_1_hto/")
+morris_dataset_1_hto <- morris_dataset_1_hto[!grepl("ENSG", rownames(morris_dataset_1_hto)), ]
+
+colnames(morris_dataset_1_hto) <- paste0("SmallScreen_", morris_dataset_1_hto$Barcode)
+
+joint_cells <- intersect(colnames(morris_dataset_1), colnames(morris_dataset_1_hto))
+
+morris_dataset_1 <- morris_dataset_1[ , joint_cells]
+morris_dataset_1_hto <- morris_dataset_1_hto[ , joint_cells]
+
+altExps(morris_dataset_1)[["hto"]] <- morris_dataset_1_hto
 
 saveRDS(morris_dataset_1, "../data/morris_raw_small_screen.rds")
 

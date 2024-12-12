@@ -308,7 +308,7 @@ library(sceptre)
 # saveRDS(data_here_test, "../data/sce_gasperini_sam_finished.rds")
 
 # data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
-sce <- readRDS("~/Desktop/sce_gasperini_sam_.rds")
+sce <- readRDS("../data/sce_gasperini_sam_finished_test.rds")
 
 output <- simulate_diff_expr_pooled(sce = sce,
                                     effect_size = .5,
@@ -318,7 +318,7 @@ output <- simulate_diff_expr_pooled(sce = sce,
                                     genes_iter = F,
                                     guide_sd = 0,
                                     center = FALSE,
-                                    rep = 10,
+                                    rep = 1,
                                     norm = "real",
                                     de_function = de_SCEPTRE_pooled,
                                     formula = ~pert,
@@ -403,3 +403,9 @@ output_processed %>%
   #mutate(dispersion = log10(dispersion + 1)) %>%
   #mutate(dispersion = cut(dispersion, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
   ggplot(aes(x = mean, y = dispersion, col = is_powered)) + geom_point() + scale_x_log10() + scale_y_log10()
+
+
+### 
+
+output_1 <- readRDS("~/Desktop/gasperini_results/sim_sceptre_res_all_0.5_5.rds")
+output_2 <- readRDS("~/Desktop/gasperini_results/sim_sceptre_res_all_0.5_6.rds")

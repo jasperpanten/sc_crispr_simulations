@@ -393,7 +393,7 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
     response_matrix = as.matrix(counts(sim_object)),
     grna_matrix = grna_matrix_here,
     grna_target_data_frame = grna_target_data_frame,
-    moi = "low"
+    moi = "high"
   )
   
   discovery_pairs <- rowData(altExps(sim_object)[["cre_pert"]]) %>%
@@ -410,7 +410,7 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
       discovery_pairs = discovery_pairs, 
       control_group = "complement"
     ) %>%
-    assign_grnas(method = "maximum") %>%
+    assign_grnas(method = "thresholding") %>%
     run_qc(n_nonzero_trt_thresh = 0, n_nonzero_cntrl_thresh = 0, response_n_umis_range = c(0, 1), response_n_nonzero_range = c(0, 1), p_mito_threshold = 0) -> test
   })
   print("test genes")
