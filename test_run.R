@@ -1,7 +1,9 @@
 ### Power analysis of perturbation effects (Sams project)
 ## this is just some tests and playing with our data
 
-library(tidyr)
+library(tidyverse)
+library(ggplot2)
+library(MatrixExtra)
 
 setwd(paste0(dirname(rstudioapi::getSourceEditorContext()$path)))
 # setwd("/cfs/klemming/projects/supr/lappalainen_lab1/users/panten/projects/sam_simulations/sc_crispr_simulations/")
@@ -309,8 +311,9 @@ library(sceptre)
 
 # data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 sce <- readRDS("../data/sce_gasperini_sam_finished_test.rds")
+sce_2 <- readRDS("../data/morris_smallscreen_processed_empty.rds")
 
-output <- simulate_diff_expr_pooled(sce = sce,
+output <- simulate_diff_expr_pooled(sce = sce_2,
                                     effect_size = .5,
                                     pert_level = "cre_pert",
                                     pert_test = NULL,
@@ -327,7 +330,15 @@ output <- simulate_diff_expr_pooled(sce = sce,
 
 saveRDS(output, "../results/simulation_output.rds")
 
-output %>%
+# 
+output_list <- lapply(list.files("~/Desktop/gasperini_results/", full.name = T), function(x){
+  data = readRDS(x)
+  data$effect_size <- as.numeric(gsub("sim_sceptre_res_all_|_[0-9].rds", "", basename(x)))
+  data
+}) %>%
+  do.call("rbind", .)
+
+output_list %>%
   group_by(gene, cre_pert) %>%
   # mutate(padj = pvalue * 20000 * 20) %>%
   mutate(padj = pvalue) %>%
@@ -340,36 +351,86 @@ output %>%
 
 # read output 
 
-output_new <- readRDS("~/Desktop/sim_res_all_0.5_1.rds")
-output_new$effect_size <- 0.5
+output_new <- output_list
 
 n_tests <- output_new %>%
-  group_by(gene, cre_pert, effect_size) %>% 
+  group_by(gene, cre_pert) %>% 
   summarize(n = n()) %>% nrow()
 
+testy <- output_new %>%
+  group_by(iteration, effect_size) %>%
+  mutate(padj = p.adjust(pvalue, method = 'BH'))
+
+output_new %>%
+  group_by(effect_size) %>%
+  dplyr::filter(!is.infinite(logFC)) %>%
+  summarize(logFC = mean(logFC, na.rm = T)) %>%
+  mutate(effect_size_measured = 2 ** logFC)
+
+# first plot without pvalue adjustment: 
 output_new %>%
   dplyr::filter(!is.na(pvalue)) %>%
-  mutate(padj = pvalue * n_tests) %>%
+  #mutate(padj = pvalue) %>%
+  ## mutate(padj = p.adjust(pvalue)) %>%
+  group_by(iteration, effect_size) %>%
+  mutate(padj = pvalue) %>%
+  # mutate(padj = pvalue) %>%
   group_by(gene, cre_pert, effect_size) %>%
   summarize(
     sig = sum(padj < .1),
     nonsig = sum(padj >= .1)
   ) %>% 
-  mutate(fraction_sig = sig / (sig + nonsig)) -> output_processed 
+  mutate(fraction_sig = sig / (sig + nonsig)) %>% 
+  ungroup() -> output_processed
 
 output_processed %>%
-  ungroup() %>%
   group_by(effect_size, fraction_sig) %>%
   summarize(n_hits = n()) %>% 
+  ungroup() %>%
+  complete(fraction_sig, effect_size, fill = list(n_hits = 0)) %>%
+  group_by(effect_size) %>%
   arrange(-fraction_sig) %>%
   mutate(n_total = cumsum(n_hits)) %>%
   ungroup() %>%
   mutate(fraction_total = n_total / max(n_total)) %>%
-  add_row(effect_size = unique(.$effect_size), fraction_sig = 0, fraction_total = 1) %>%
   add_row(effect_size = unique(.$effect_size), fraction_sig = 1, fraction_total = 0) %>%
-  ggplot(aes(x = fraction_total, y = fraction_sig, col = as.factor(effect_size))) + geom_line() + xlim(c(0, 1)) + ylim(c(0, 1)) + 
-    geom_hline(yintercept = 0.8, linetype = 'dashed')
-  
+  ggplot(aes(x = fraction_total, y = fraction_sig, col = as.factor(effect_size))) + geom_line(linewidth = 2) + xlim(c(0, 1)) + ylim(c(0, 1)) + 
+  geom_hline(yintercept = 0.8, linetype = 'dashed') + theme_classic(base_size = 15) + 
+  xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
+  ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
+ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_no_adjust.pdf")
+
+output_new %>%
+  dplyr::filter(!is.na(pvalue)) %>%
+  #mutate(padj = pvalue) %>%
+  ## mutate(padj = p.adjust(pvalue)) %>%
+  group_by(iteration, effect_size) %>%
+  mutate(padj = p.adjust(pvalue, method = 'BH')) %>%
+  # mutate(padj = pvalue) %>%
+  group_by(gene, cre_pert, effect_size) %>%
+  summarize(
+    sig = sum(padj < .1),
+    nonsig = sum(padj >= .1)
+  ) %>% 
+  mutate(fraction_sig = sig / (sig + nonsig)) %>% 
+  ungroup() -> output_processed
+
+output_processed %>%
+  group_by(effect_size, fraction_sig) %>%
+  summarize(n_hits = n()) %>% 
+  ungroup() %>%
+  complete(fraction_sig, effect_size, fill = list(n_hits = 0)) %>%
+  group_by(effect_size) %>%
+  arrange(-fraction_sig) %>%
+  mutate(n_total = cumsum(n_hits)) %>%
+  ungroup() %>%
+  mutate(fraction_total = n_total / max(n_total)) %>%
+  add_row(effect_size = unique(.$effect_size), fraction_sig = ifelse(unique(.$effect_size) == 0.9, 0, 1), fraction_total = 0) %>%
+  ggplot(aes(x = fraction_total, y = fraction_sig, col = as.factor(effect_size))) + geom_line(linewidth = 2) + xlim(c(0, 1)) + ylim(c(0, 1)) + 
+  geom_hline(yintercept = 0.8, linetype = 'dashed') + theme_classic(base_size = 15) + 
+  xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
+  ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
+ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_benjaminihochberg.pdf")
 
 # check how power depends on detection stats: 
 
@@ -389,7 +450,7 @@ output_processed %>%
   mutate(mean = cut(mean, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
   # mutate(mean = cut_number(mean, n = 10))  %>%
   ggplot(aes(x = mean, fill = is_powered)) + geom_bar(position = "fill")
-  
+
 output_processed %>% 
   left_join(gene_stats) %>%
   mutate(is_powered = fraction_sig > .8) %>%
@@ -403,9 +464,3 @@ output_processed %>%
   #mutate(dispersion = log10(dispersion + 1)) %>%
   #mutate(dispersion = cut(dispersion, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
   ggplot(aes(x = mean, y = dispersion, col = is_powered)) + geom_point() + scale_x_log10() + scale_y_log10()
-
-
-### 
-
-output_1 <- readRDS("~/Desktop/gasperini_results/sim_sceptre_res_all_0.5_5.rds")
-output_2 <- readRDS("~/Desktop/gasperini_results/sim_sceptre_res_all_0.5_6.rds")
