@@ -276,6 +276,7 @@ readxl::read_excel("~/Desktop/science.adh7699_tables_s1_to_s4(1)/science.adh7699
 
 grna_hits_se <- SingleCellExperiment(assays = list("counts" = grna_hits))
 rowData(grna_hits_se) <- annotations[gsub("_", "-", rownames(grna_hits)), ]
+rownames(grna_hits_se) <- gsub("_", "-", rownames(grna_hits_se))
 
 altExps(morris_dataset_1_filtered)[["cre_pert"]] <- grna_hits_se
 

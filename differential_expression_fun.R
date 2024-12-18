@@ -398,14 +398,8 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
   
   discovery_pairs <- rowData(altExps(sim_object)[["cre_pert"]]) %>%
     data.frame() %>%
-<<<<<<< Updated upstream
-    rename("cre_target" = "grna_target", "target_genes" = "response_id") %>%
-    #rename("grna_target" = "cre_target", "response_id" = "target_genes") %>%
-=======
     # rename("cre_target" = "grna_target", "target_genes" = "response_id") %>%
-    # rownames_to_column("cre_target") %>%
     rename("grna_target" = "cre_target", "response_id" = "target_genes") %>%
->>>>>>> Stashed changes
     unnest_longer(response_id) %>% 
     dplyr::filter(response_id %in% rownames(sim_object)) %>%
     distinct()
