@@ -1,0 +1,31 @@
+#!/bin/python -l
+
+# run as 
+# snakemake -s snakefile_morris --use-envmodules --executor slurm --default-resources slurm_account=naiss2023-5-517 slurm_partition=shared --jobs 1
+
+import pandas as pd
+import pdb
+
+effect_sizes = [0.9, 0.8, 0.7, 0.6, 0.5]
+reps = [1, 2, 3, 4, 5]
+
+effect_sizes=[0.5]
+reps = [1]
+
+cres_to_run = "all"
+
+rule all:
+    input:
+        expand("../results/morris_small_results/sim_sceptre_res_{cre}_{effect_size}_{rep}.rds", cre = cres_to_run, effect_size = effect_sizes, rep = reps)
+
+rule run_simulation:
+    output: "../results/morris_small_results/sim_sceptre_res_{cre}_{effect_size}_{rep}.rds",
+    envmodules:
+        "PDC/23.12",
+        "R/4.4.1-cpeGNU-23.12",
+    resources:
+        mem_mb=20000,
+        runtime=120,
+        #cpus_per_task=8,
+        slurm_partition="shared",
+    shell: "Rscript test_run_6.R {wildcards.effect_size} 1 {wildcards.cre} {wildcards.rep}"

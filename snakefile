@@ -24,8 +24,8 @@ rule run_simulation:
         "PDC/23.12",
         "R/4.4.1-cpeGNU-23.12",
     resources:
-        mem_mb=50000,
-        runtime=360,
+        mem_mb=45000,
+        runtime=300,
         #cpus_per_task=8,
         slurm_partition="shared",
     shell: "Rscript test_run_5.R {wildcards.effect_size} 1 {wildcards.cre} {wildcards.rep}"
