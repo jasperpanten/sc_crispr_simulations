@@ -506,7 +506,6 @@ simulate_pert_object_real_pooled <- function(sce, pert_genes, effect_size,
                                               effect_size_mat = es_mat)
 
 
-  set.seed(1234)
   sim_object <- SingleCellExperiment(assays = list(counts = sim_object), rowData = rowData(sce),
                                      colData = colData(sce))
   

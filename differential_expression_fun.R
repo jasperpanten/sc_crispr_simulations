@@ -398,10 +398,17 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
   
   discovery_pairs <- rowData(altExps(sim_object)[["cre_pert"]]) %>%
     data.frame() %>%
+<<<<<<< Updated upstream
     rename("cre_target" = "grna_target", "target_genes" = "response_id") %>%
     #rename("grna_target" = "cre_target", "response_id" = "target_genes") %>%
+=======
+    # rename("cre_target" = "grna_target", "target_genes" = "response_id") %>%
+    # rownames_to_column("cre_target") %>%
+    rename("grna_target" = "cre_target", "response_id" = "target_genes") %>%
+>>>>>>> Stashed changes
     unnest_longer(response_id) %>% 
-    dplyr::filter(response_id %in% rownames(sim_object))
+    dplyr::filter(response_id %in% rownames(sim_object)) %>%
+    distinct()
   
   sceptre_object@covariate_data_frame <- sceptre_object@covariate_data_frame[c("response_n_nonzero", "response_n_umis", "grna_n_nonzero")]
   
@@ -413,7 +420,7 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
     assign_grnas(method = "thresholding") %>%
     run_qc(n_nonzero_trt_thresh = 0, n_nonzero_cntrl_thresh = 0, response_n_umis_range = c(0, 1), response_n_nonzero_range = c(0, 1), p_mito_threshold = 0) -> test
   })
-  print("test genes")
+  
   test %>%
     run_discovery_analysis(
       parallel = F,
@@ -424,7 +431,6 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
   
   # combine log fold changes and p-values to create output
   output <- res[ , c("response_id", "grna_target", "log_2_fold_change", "p_value") ]
-  # colnames(output) <- c("gene", "logFC", "ci_high", "ci_low", "pvalue")
   colnames(output) <- c("gene", "cre_pert", "logFC", "pvalue")
   output <- output[order(output$pvalue), ]
   

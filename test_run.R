@@ -399,6 +399,7 @@ output_processed %>%
   xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
   ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
 ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_no_adjust.pdf")
+<<<<<<< Updated upstream
 
 output_new %>%
   dplyr::filter(!is.na(pvalue)) %>%
@@ -431,7 +432,41 @@ output_processed %>%
   xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
   ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
 ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_benjaminihochberg.pdf")
+=======
+>>>>>>> Stashed changes
 
+output_new %>%
+  dplyr::filter(!is.na(pvalue)) %>%
+  #mutate(padj = pvalue) %>%
+  ## mutate(padj = p.adjust(pvalue)) %>%
+  group_by(iteration, effect_size) %>%
+  mutate(padj = p.adjust(pvalue, method = 'BH')) %>%
+  # mutate(padj = pvalue) %>%
+  group_by(gene, cre_pert, effect_size) %>%
+  summarize(
+    sig = sum(padj < .1),
+    nonsig = sum(padj >= .1)
+  ) %>% 
+  mutate(fraction_sig = sig / (sig + nonsig)) %>% 
+  ungroup() -> output_processed
+
+output_processed %>%
+  group_by(effect_size, fraction_sig) %>%
+  summarize(n_hits = n()) %>% 
+  ungroup() %>%
+  complete(fraction_sig, effect_size, fill = list(n_hits = 0)) %>%
+  group_by(effect_size) %>%
+  arrange(-fraction_sig) %>%
+  mutate(n_total = cumsum(n_hits)) %>%
+  ungroup() %>%
+  mutate(fraction_total = n_total / max(n_total)) %>%
+  add_row(effect_size = unique(.$effect_size), fraction_sig = ifelse(unique(.$effect_size) == 0.9, 0, 1), fraction_total = 0) %>%
+  ggplot(aes(x = fraction_total, y = fraction_sig, col = as.factor(effect_size))) + geom_line(linewidth = 2) + xlim(c(0, 1)) + ylim(c(0, 1)) + 
+    geom_hline(yintercept = 0.8, linetype = 'dashed') + theme_classic(base_size = 15) + 
+    xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
+    ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
+ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_benjaminihochberg.pdf")
+  
 # check how power depends on detection stats: 
 
 gene_stats <- data.frame(

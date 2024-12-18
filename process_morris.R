@@ -2,6 +2,10 @@ library(scater)
 library(scran)
 library(tidyverse)
 library(DropletUtils)
+library(cluster)
+
+source("./differential_expression_fun.R")
+source("./power_simulations_fun.R")
 
 setwd(paste0(dirname(rstudioapi::getSourceEditorContext()$path)))
 
@@ -39,10 +43,15 @@ center_log_transformation <- function(mat, pseudocount = 1){
 
 logcounts(altExps(morris_dataset_1)[["hto"]]) <- center_log_transformation(counts(altExps(morris_dataset_1)[["hto"]]))
 
+MaxN <- function(x, N = 1){
+  return(sort(x)[[N]])
+}
+
 # reimplementation of HTODemux for scater objects
 HTODemux_scater <- function(
     object,
     assay = "hto",
+    count_transformation = "counts",
     positive.quantile = 0.99,
     init = NULL,
     nstarts = 100,
@@ -66,7 +75,7 @@ HTODemux_scater <- function(
   
   data <-  altExps(object)[[assay]]
   # object <- altExps(object)[[assay]]
-  counts <- counts(data)
+  counts <- assays(data)[[count_transformation]]
 
   # ncenters <- init %||% (nrow(x = data) + 1)
   ncenters = nrow(counts) + 1
@@ -99,17 +108,17 @@ HTODemux_scater <- function(
     EXPR = kfunc,
     'kmeans' = {
       init.clusters <- kmeans(
-        x = t(x = counts(data)),
+        x = t(x = counts),
         centers = ncenters,
         nstart = nstarts
       )
       #identify positive and negative signals for all HTO
-      Idents(object = object, cells = names(x = init.clusters$cluster)) <- init.clusters$cluster
+      data$clustering <- init.clusters$cluster
     },
     'clara' = {
       #use fast k-medoid clustering
       init.clusters <- clara(
-        x = t(x = counts(data)),
+        x = t(x = counts),
         k = ncenters,
         samples = nsamples
       )
@@ -129,27 +138,42 @@ HTODemux_scater <- function(
   #     verbose = FALSE
   #   )[[assay]]
   # )
-  average.expression <- counts(aggregateAcrossCells(object, object$clustering))
+  
+  average.expression <- assays(aggregateAcrossCells(data, data$clustering, statistics = "mean"))[[count_transformation]]
+  
+  print(average.expression)
   
   #checking for any cluster with all zero counts for any barcode
   if (any(colSums(average.expression == 0) > 0)) {
     stop("Cells with zero counts exist as a cluster.")
   }
   #create a matrix to store classification result
-  discrete <- counts(object)
+  discrete <- counts
   discrete[discrete > 0] <- 0
   # for each HTO, we will use the minimum cluster for fitting
+  # for (iter in rownames(x = data)) {
+  #   values <- counts[iter, colnames(data)]
+  #   #commented out if we take all but the top cluster as background
+  #   #values_negative=values[setdiff(object@cell.names,WhichCells(object,which.max(average.expression[iter,])))]
+  #   values.use <- values[WhichCells(
+  #     object = object,
+  #     idents = levels(x = Idents(object = object))[[which.min(x = average.expression[iter, ])]]
+  #   )]
+  #   fit <- suppressWarnings(expr = fitdist(data = values.use, distr = "nbinom"))
+  #   cutoff <- as.numeric(x = quantile(x = fit, probs = positive.quantile)$quantiles[1])
+  #   discrete[iter, names(x = which(x = values > cutoff))] <- 1
+  #   if (verbose) {
+  #     message(paste0("Cutoff for ", iter, " : ", cutoff, " reads"))
+  #   }
+  # }
   for (iter in rownames(x = data)) {
-    values <- counts[iter, colnames(object)]
+    values <- counts[iter, colnames(data)]
     #commented out if we take all but the top cluster as background
     #values_negative=values[setdiff(object@cell.names,WhichCells(object,which.max(average.expression[iter,])))]
-    values.use <- values[WhichCells(
-      object = object,
-      idents = levels(x = Idents(object = object))[[which.min(x = average.expression[iter, ])]]
-    )]
-    fit <- suppressWarnings(expr = fitdist(data = values.use, distr = "nbinom"))
+    values.use <- values[data$clustering == which.min(x = average.expression[iter, ])]
+    fit <- suppressWarnings(expr = fitdistrplus::fitdist(data = values.use, distr = "nbinom"))
     cutoff <- as.numeric(x = quantile(x = fit, probs = positive.quantile)$quantiles[1])
-    discrete[iter, names(x = which(x = values > cutoff))] <- 1
+    discrete[iter, which(x = values > cutoff)] <- 1
     if (verbose) {
       message(paste0("Cutoff for ", iter, " : ", cutoff, " reads"))
     }
@@ -161,19 +185,19 @@ HTODemux_scater <- function(
   classification.global[npositive == 1] <- "Singlet"
   classification.global[npositive > 1] <- "Doublet"
   donor.id = rownames(x = data)
-  hash.max <- apply(X = data, MARGIN = 2, FUN = max)
-  hash.maxID <- apply(X = data, MARGIN = 2, FUN = which.max)
-  hash.second <- apply(X = data, MARGIN = 2, FUN = MaxN, N = 2)
+  hash.max <- apply(X = counts, MARGIN = 2, FUN = max)
+  hash.maxID <- apply(X = counts, MARGIN = 2, FUN = which.max)
+  hash.second <- apply(X = counts, MARGIN = 2, FUN = MaxN, N = 2)
   hash.maxID <- as.character(x = donor.id[sapply(
     X = 1:ncol(x = data),
     FUN = function(x) {
-      return(which(x = data[, x] == hash.max[x])[1])
+      return(which(x = counts[, x] == hash.max[x])[1])
     }
   )])
   hash.secondID <- as.character(x = donor.id[sapply(
     X = 1:ncol(x = data),
     FUN = function(x) {
-      return(which(x = data[, x] == hash.second[x])[1])
+      return(which(x = counts[, x] == hash.second[x])[1])
     }
   )])
   hash.margin <- hash.max - hash.second
@@ -200,28 +224,71 @@ HTODemux_scater <- function(
     c('maxID', 'secondID', 'margin', 'classification', 'classification.global'),
     sep = '_'
   )
-  object <- AddMetaData(object = object, metadata = classification.metadata)
-  Idents(object) <- paste0(assay, '_classification')
+  colData(object) <- cbind(colData(object), classification.metadata)
+  # Idents(object) <- paste0(assay, '_classification')
   # Idents(object, cells = rownames(object@meta.data[object@meta.data$classification.global == "Doublet", ])) <- "Doublet"
-  doublets <- rownames(x = object[[]])[which(object[[paste0(assay, "_classification.global")]] == "Doublet")]
-  Idents(object = object, cells = doublets) <- 'Doublet'
+  # doublets <- rownames(x = object[[]])[which(object[[paste0(assay, "_classification.global")]] == "Doublet")]
+  # Idents(object = object, cells = doublets) <- 'Doublet'
   # object@meta.data$hash.ID <- Idents(object)
-  object$hash.ID <- Idents(object = object)
+  hash_ids <- classification.metadata$hto_classification
+  hash_ids[classification.metadata$hto_classification.global == "Doublet"] <- "Doublet"
+  hash_ids[classification.metadata$hto_classification.global == "Negative"] <- "Negative"
+  object$hash.ID <- hash_ids
   return(object)
 }
 
-counts(altExps(morris_dataset_1)[["hto"]]) %>%
-  t() %>%
-  as.matrix() %>%
-  data.frame() %>%
-  pivot_longer(-c(HTO21)) %>%
-  ggplot(aes(x = HTO21, y = value)) + geom_point(size = .1) + facet_wrap(~name) + scale_x_log10() + scale_y_log10()
+morris_dataset_1 <- HTODemux_scater(morris_dataset_1, count_transformation = "counts", kfunc = "clara")
 
-logcounts(altExps(morris_dataset_1)[["hto"]]) %>%
-  t() %>%
-  as.matrix() %>%
-  data.frame() %>%
-  pivot_longer(-c()) %>%
-  ggplot(aes(x = value)) + facet_wrap(~name) + geom_density() + scale_x_log10()
+cells_keep_demultiplex <- morris_dataset_1$hash.ID != "Negative" & morris_dataset_1$hash.ID != "Doublet"
+
+# gdo thresholds
+quantiles_gdo <- get_quantiles(morris_dataset_1$altexps_cre_pert_sum, 0.01, 0.99)
+qplot(x = "1", y = morris_dataset_1$altexps_cre_pert_sum) + geom_violin() + geom_hline(yintercept = quantiles_gdo, col = "red") + scale_y_log10()
+
+cells_keep_gdo <- (morris_dataset_1$altexps_cre_pert_sum > quantiles_gdo[[1]] & morris_dataset_1$altexps_cre_pert_sum < quantiles_gdo[[2]])
+
+# filter cells for final dataset
+morris_dataset_1_filtered <- morris_dataset_1[ , cells_keep_quality & cells_keep_demultiplex & cells_keep_gdo ]
+
+# gdo annotations
+umi_thresholds <- read.csv("../data/GSE171452_RAW/GSM5225859_STINGseq-v1_GDO.umi_thresholds.csv") %>%
+  dplyr::filter(grepl("^SNP-", Protospacer)) %>% column_to_rownames("Protospacer")
+
+grna_hits <- do.call("rbind", lapply(rownames(umi_thresholds), function(grna){
+  threshold = umi_thresholds[grna, ]
+  counts = counts(altExps(morris_dataset_1_filtered)[["cre_pert"]])[grna, ]
+  return(as.numeric(counts > threshold & counts > 3))
+}))
+colnames(grna_hits) <- colnames(morris_dataset_1_filtered)
+rownames(grna_hits) <- rownames(umi_thresholds)
+
+# add target genes for each cre
+readxl::read_excel("~/Desktop/science.adh7699_tables_s1_to_s4(1)/science.adh7699_table_s3.xlsx", sheet = 6, skip = 2) %>% colnames()
+
+readxl::read_excel("~/Desktop/science.adh7699_tables_s1_to_s4(1)/science.adh7699_table_s3.xlsx", sheet = 6, skip = 2) %>%
+  # dplyr::select(c("SNP", "SNP Coordinates (hg19)", "Gene", "Ensembl ID", "gRNAs")) %>% 
+  dplyr::select(c("Gene", "Ensembl ID", "gRNAs")) %>% 
+  separate_longer_delim(gRNAs, delim = "__") %>% 
+  group_by(gRNAs) %>% 
+  summarize(target_genes = list(`Ensembl ID`), gene_symbol = list(Gene)) %>% 
+  mutate(cre_target = gRNAs) %>%
+  column_to_rownames("gRNAs") -> annotations
+
+grna_hits_se <- SingleCellExperiment(assays = list("counts" = grna_hits))
+rowData(grna_hits_se) <- annotations[gsub("_", "-", rownames(grna_hits)), ]
+
+altExps(morris_dataset_1_filtered)[["cre_pert"]] <- grna_hits_se
+
+# remove unexpressed genes
+morris_dataset_1_filtered <- morris_dataset_1_filtered[rowSums(counts(morris_dataset_1_filtered)) > 20, ]
+
+# estimate means and dispersions
+morris_dataset_1_filtered <- fit_negbinom_deseq2(morris_dataset_1_filtered, size_factors = "ratio", fit_type = "parametric")
+
+morris_dataset_1_filtered_empty <- morris_dataset_1_filtered
+assays(morris_dataset_1_filtered_empty) <- list()
+
+saveRDS(morris_dataset_1_filtered, "../data/morris_smallscreen_processed.rds")
+saveRDS(morris_dataset_1_filtered_empty, "../data/morris_smallscreen_processed_empty.rds")
 
 
