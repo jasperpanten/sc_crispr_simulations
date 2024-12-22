@@ -271,17 +271,22 @@ readxl::read_excel("~/Desktop/science.adh7699_tables_s1_to_s4(1)/science.adh7699
   separate_longer_delim(gRNAs, delim = "__") %>% 
   group_by(gRNAs) %>% 
   summarize(target_genes = list(`Ensembl ID`), gene_symbol = list(Gene)) %>% 
-  mutate(cre_target = gRNAs) %>%
-  column_to_rownames("gRNAs") -> annotations
+  column_to_rownames("gRNAs") %>% 
+  mutate(gRNAs = rownames(.)) %>%
+  mutate(cre_target = gsub("-[0-9]*$", "", gRNAs)) %>% 
+  distinct() -> annotations
+
+rownames(grna_hits) <- gsub("_", "-", rownames(grna_hits))
+grna_hits <- grna_hits[rownames(grna_hits) %in% rownames(annotations), ]
 
 grna_hits_se <- SingleCellExperiment(assays = list("counts" = grna_hits))
-rowData(grna_hits_se) <- annotations[gsub("_", "-", rownames(grna_hits)), ]
+rowData(grna_hits_se) <- annotations[rownames(grna_hits), ]
 rownames(grna_hits_se) <- gsub("_", "-", rownames(grna_hits_se))
 
 altExps(morris_dataset_1_filtered)[["cre_pert"]] <- grna_hits_se
 
 # remove unexpressed genes
-morris_dataset_1_filtered <- morris_dataset_1_filtered[rowSums(counts(morris_dataset_1_filtered)) > 20, ]
+morris_dataset_1_filtered <- morris_dataset_1_filtered[rowSums(counts(morris_dataset_1_filtered)) > 10, ]
 
 # estimate means and dispersions
 morris_dataset_1_filtered <- fit_negbinom_deseq2(morris_dataset_1_filtered, size_factors = "ratio", fit_type = "parametric")
@@ -289,7 +294,5 @@ morris_dataset_1_filtered <- fit_negbinom_deseq2(morris_dataset_1_filtered, size
 morris_dataset_1_filtered_empty <- morris_dataset_1_filtered
 assays(morris_dataset_1_filtered_empty) <- list()
 
-saveRDS(morris_dataset_1_filtered, "../data/morris_smallscreen_processed.rds")
-saveRDS(morris_dataset_1_filtered_empty, "../data/morris_smallscreen_processed_empty.rds")
-
-
+saveRDS(morris_dataset_1_filtered, "../data/morris_small_screen_processed.rds")
+saveRDS(morris_dataset_1_filtered_empty, "../data/morris_small_screen_processed_empty.rds")

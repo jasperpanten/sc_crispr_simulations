@@ -184,7 +184,7 @@ simulate_diff_expr_pooled <- function(sce, effect_size, pert_level, pert_test, m
   # parse input ------------------------------------------------------------------------------------
   
   # parse arguments
-  norm <- match.arg(norm)
+  # norm <- match.arg(norm)
   
   # check colData
   col_names <- colnames(colData(sce)) 

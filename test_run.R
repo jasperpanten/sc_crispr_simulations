@@ -311,7 +311,7 @@ library(sceptre)
 
 # data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 sce <- readRDS("../data/sce_gasperini_sam_finished_test.rds")
-sce_2 <- readRDS("../data/morris_smallscreen_processed_empty.rds")
+sce_2 <- readRDS("../data/morris_small_screen_processed_empty.rds")
 
 output <- simulate_diff_expr_pooled(sce = sce_2,
                                     effect_size = .5,
@@ -399,7 +399,6 @@ output_processed %>%
   xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
   ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
 ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_no_adjust.pdf")
-<<<<<<< Updated upstream
 
 output_new %>%
   dplyr::filter(!is.na(pvalue)) %>%
@@ -432,15 +431,83 @@ output_processed %>%
   xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
   ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
 ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_benjaminihochberg.pdf")
-=======
->>>>>>> Stashed changes
 
+# check how power depends on detection stats: 
+
+# gene_stats <- data.frame(
+#   gene = rownames(data_here_test),
+#   mean = rowData(data_here_test)$mean, 
+#   dispersion = rowData(data_here_test)$dispersion
+# )
+# 
+# gene_stats %>% 
+#   ggplot(aes(x = mean, y = dispersion)) + geom_point() + scale_x_log10() + scale_y_log10()
+# 
+# output_processed %>% 
+#   left_join(gene_stats) %>%
+#   mutate(is_powered = fraction_sig > .8) %>%
+#   mutate(mean = log10(mean + 1)) %>%
+#   mutate(mean = cut(mean, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
+#   # mutate(mean = cut_number(mean, n = 10))  %>%
+#   ggplot(aes(x = mean, fill = is_powered)) + geom_bar(position = "fill")
+# 
+# output_processed %>% 
+#   left_join(gene_stats) %>%
+#   mutate(is_powered = fraction_sig > .8) %>%
+#   mutate(dispersion = log10(dispersion + 1)) %>%
+#   mutate(dispersion = cut(dispersion, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
+#   ggplot(aes(x = dispersion, fill = is_powered)) + geom_bar(position = "fill")
+# 
+# output_processed %>% 
+#   left_join(gene_stats) %>%
+#   mutate(is_powered = fraction_sig > .8) %>%
+#   #mutate(dispersion = log10(dispersion + 1)) %>%
+#   #mutate(dispersion = cut(dispersion, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
+#   ggplot(aes(x = mean, y = dispersion, col = is_powered)) + geom_point() + scale_x_log10() + scale_y_log10()
+
+output_list <- lapply(list.files("~/Desktop/morris_small_results//", full.name = T), function(x){
+  data = readRDS(x)
+  data$effect_size <- as.numeric(gsub("sim_sceptre_res_all_|_[0-9].rds", "", basename(x)))
+  data
+}) %>%
+  do.call("rbind", .)
+
+output_list %>%
+  group_by(gene, cre_pert) %>%
+  # mutate(padj = pvalue * 20000 * 20) %>%
+  mutate(padj = pvalue) %>%
+  summarize(
+    sig = sum(padj < .1),
+    nonsig = sum(padj >= .1)
+  ) %>%
+  mutate(fraction_sig = sig / (sig + nonsig)) %>%
+  ggplot(aes(x = sig)) + geom_histogram()
+
+# read output 
+
+output_new <- output_list
+
+n_tests <- output_new %>%
+  group_by(gene, cre_pert) %>% 
+  summarize(n = n()) %>% nrow()
+
+testy <- output_new %>%
+  group_by(iteration, effect_size) %>%
+  mutate(padj = p.adjust(pvalue, method = 'BH'))
+
+output_new %>%
+  group_by(effect_size) %>%
+  dplyr::filter(!is.infinite(logFC)) %>%
+  summarize(logFC = mean(logFC, na.rm = T)) %>%
+  mutate(effect_size_measured = 2 ** logFC)
+
+# first plot without pvalue adjustment: 
 output_new %>%
   dplyr::filter(!is.na(pvalue)) %>%
   #mutate(padj = pvalue) %>%
   ## mutate(padj = p.adjust(pvalue)) %>%
   group_by(iteration, effect_size) %>%
-  mutate(padj = p.adjust(pvalue, method = 'BH')) %>%
+  mutate(padj = pvalue) %>%
   # mutate(padj = pvalue) %>%
   group_by(gene, cre_pert, effect_size) %>%
   summarize(
@@ -460,42 +527,9 @@ output_processed %>%
   mutate(n_total = cumsum(n_hits)) %>%
   ungroup() %>%
   mutate(fraction_total = n_total / max(n_total)) %>%
-  add_row(effect_size = unique(.$effect_size), fraction_sig = ifelse(unique(.$effect_size) == 0.9, 0, 1), fraction_total = 0) %>%
+  add_row(effect_size = unique(.$effect_size), fraction_sig = 1, fraction_total = 0) %>%
   ggplot(aes(x = fraction_total, y = fraction_sig, col = as.factor(effect_size))) + geom_line(linewidth = 2) + xlim(c(0, 1)) + ylim(c(0, 1)) + 
-    geom_hline(yintercept = 0.8, linetype = 'dashed') + theme_classic(base_size = 15) + 
-    xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
-    ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
-ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_benjaminihochberg.pdf")
-  
-# check how power depends on detection stats: 
-
-gene_stats <- data.frame(
-  gene = rownames(data_here_test),
-  mean = rowData(data_here_test)$mean, 
-  dispersion = rowData(data_here_test)$dispersion
-)
-
-gene_stats %>% 
-  ggplot(aes(x = mean, y = dispersion)) + geom_point() + scale_x_log10() + scale_y_log10()
-
-output_processed %>% 
-  left_join(gene_stats) %>%
-  mutate(is_powered = fraction_sig > .8) %>%
-  mutate(mean = log10(mean + 1)) %>%
-  mutate(mean = cut(mean, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
-  # mutate(mean = cut_number(mean, n = 10))  %>%
-  ggplot(aes(x = mean, fill = is_powered)) + geom_bar(position = "fill")
-
-output_processed %>% 
-  left_join(gene_stats) %>%
-  mutate(is_powered = fraction_sig > .8) %>%
-  mutate(dispersion = log10(dispersion + 1)) %>%
-  mutate(dispersion = cut(dispersion, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
-  ggplot(aes(x = dispersion, fill = is_powered)) + geom_bar(position = "fill")
-
-output_processed %>% 
-  left_join(gene_stats) %>%
-  mutate(is_powered = fraction_sig > .8) %>%
-  #mutate(dispersion = log10(dispersion + 1)) %>%
-  #mutate(dispersion = cut(dispersion, breaks = c(0, 0.01, 0.05, 0.1, 0.5, 1, 10, 100))) %>%
-  ggplot(aes(x = mean, y = dispersion, col = is_powered)) + geom_point() + scale_x_log10() + scale_y_log10()
+  geom_hline(yintercept = 0.8, linetype = 'dashed') + theme_classic(base_size = 15) + 
+  xlab("Proportion of CRE-gene pairs") + ylab("Power") + labs("color" = "Effect size") + 
+  ggtitle("CRISPRi effect detection power for tested \n CRE−gene links (SCEPTRE, Gasperini data)")
+ggsave("~/Desktop/PostDoc_TL_Lab/Projects/Sam/results/plots/241216_gasperini_5it_no_adjust.pdf")

@@ -385,7 +385,8 @@ de_SCEPTRE_pooled <- function(sim_object, formula = ~pert,
   colnames(grna_matrix_here) <- colnames(sim_object)
   rownames(grna_matrix_here) <- rownames(altExps(sim_object)[["cre_pert"]])
   
-  grna_target_data_frame <- data.frame(grna_target = rownames(grna_matrix_here), grna_id = rownames(grna_matrix_here))
+  #grna_target_data_frame <- data.frame(grna_target = rownames(grna_matrix_here), grna_id = rownames(grna_matrix_here))
+  grna_target_data_frame <- data.frame(grna_target = rowData(altExps(sim_object)[["cre_pert"]])$cre_target, grna_id = rownames(grna_matrix_here))
   
   suppressWarnings({
   
