@@ -28,7 +28,7 @@ print(pert_here)
 
 #data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 #data_here_test <- readRDS("../data/morris_smallscreen_processed_empty.rds")
-data_here_test <- readRDS("../data/morris_small_screen_processed_empty.rds")
+data_here_test <- readRDS("../data/morris_largescreen_processed_full_empty.rds")
 #data_here_test <- readRDS("../data/sce_gasperini_sam_finished_test.rds")
 
 # pert_to_run <- ifelse(pert_here == "all", NULL, pert_here)
@@ -48,4 +48,4 @@ output <- simulate_diff_expr_pooled(sce = data_here_test,
                                     n_ctrl = F,
                                     cell_batches = NULL)
 
-saveRDS(output, paste0("../results/morris_small_results/sim_sceptre_res_all_", effect_size, "_", repetition, ".rds"))
+saveRDS(output, paste0("../results/morris_large_results/sim_sceptre_res_all_", effect_size, "_", repetition, ".rds"))
