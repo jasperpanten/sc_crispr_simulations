@@ -4,6 +4,8 @@ library(tidyverse)
 library(DropletUtils)
 library(cluster)
 
+setwd("~/Desktop/PostDoc_TL_Lab/Projects/Sam/sc_crispr_simulations/")
+
 source("./differential_expression_fun.R")
 source("./power_simulations_fun.R")
 
@@ -279,13 +281,14 @@ for (i in c(1, 2, 3, 4)){
     mutate(cre_target = gsub("-[0-9]*$", "", gRNAs)) %>% 
     distinct() -> annotations
   
-  grna_hits <- grna_hits[rownames(grna_hits) %in% rownames(annotations), ]
-  
-  grna_hits_se <- SingleCellExperiment(assays = list("counts" = grna_hits))
-  rowData(grna_hits_se) <- annotations[rownames(grna_hits), ]
-  rownames(grna_hits_se) <- gsub("_", "-", rownames(grna_hits_se))
-  
-  altExps(morris_dataset_1_filtered)[["cre_pert"]] <- grna_hits_se
+    rownames(grna_hits) <- gsub("_", "-", rownames(grna_hits))
+    grna_hits <- grna_hits[rownames(grna_hits) %in% rownames(annotations), ]
+    
+    grna_hits_se <- SingleCellExperiment(assays = list("counts" = grna_hits))
+    rowData(grna_hits_se) <- annotations[rownames(grna_hits), ]
+    rownames(grna_hits_se) <- gsub("_", "-", rownames(grna_hits_se))
+    
+    altExps(morris_dataset_1_filtered)[["cre_pert"]] <- grna_hits_se
   
   # remove unexpressed genes
   # morris_dataset_1_filtered <- morris_dataset_1_filtered[rowSums(counts(morris_dataset_1_filtered)) > 20, ]
@@ -303,8 +306,10 @@ for (i in c(1, 2, 3, 4)){
 ## aggregate data
 
 data_list <- lapply(1:4, function(i){readRDS(paste0("../data/morris_largescreen_processed_empty_", i, ".rds"))})
-data <- do.call("cbind", data)
+data <- do.call("cbind", data_list)
 
+data <- morris_dataset_1_filtered[rowSums(counts(data)) > 20, ]
+data <- fit_negbinom_deseq2(data, size_factors = "ratio", fit_type = "parametric")
+data <- data[!is.na(rowData(data)$dispersion), ]
 
-
-saveRDS(data, "../data_morris_largescreen_processed_full_empty.rds")
+saveRDS(data, "../data/morris_largescreen_processed_full_empty.rds")
