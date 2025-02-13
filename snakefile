@@ -1,15 +1,15 @@
 #!/bin/python -l
 
 # run as 
-# snakemake -s snakefile --use-envmodules --executor slurm --default-resources slurm_account=naiss2023-5-517 slurm_partition=shared --jobs 1
+# snakemake -s snakefile --use-envmodules --executor slurm --default-resources slurm_account=naiss2024-5-581 slurm_partition=shared --jobs 1
 
 import pandas as pd
 import pdb
 
-effect_sizes = [0.9, 0.8, 0.7, 0.6, 0.5]
+effect_sizes = [0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5]
 reps = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-cres_to_run = pd.read_csv("../processed_data/cre_names_gasperini.txt")["x"]
+cres_to_run = pd.read_csv("../processed_data/gasperini_target_sites_Jasper.txt")["x"]
 cres_to_run = cres_to_run.to_numpy()
 cres_to_run = cres_to_run[[1]]
 cres_to_run = "all"

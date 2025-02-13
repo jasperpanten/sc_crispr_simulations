@@ -33,6 +33,8 @@ data_here_test <- readRDS("../data/morris_small_screen_processed_empty.rds")
 
 # pert_to_run <- ifelse(pert_here == "all", NULL, pert_here)
 
+print(dim(data_here_test))
+
 output <- simulate_diff_expr_pooled(sce = data_here_test,
                                     effect_size = effect_size,
                                     pert_level = "cre_pert",

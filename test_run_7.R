@@ -28,7 +28,7 @@ print(pert_here)
 
 #data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 #data_here_test <- readRDS("../data/morris_smallscreen_processed_empty.rds")
-data_here_test <- readRDS("../data/morris_largescreen_processed_full_empty.rds")
+data_here_test <- readRDS("../data/morris_largescreen_processed_full_empty_new.rds")
 #data_here_test <- readRDS("../data/sce_gasperini_sam_finished_test.rds")
 
 # pert_to_run <- ifelse(pert_here == "all", NULL, pert_here)

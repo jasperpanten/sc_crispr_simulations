@@ -1,12 +1,12 @@
 #!/bin/python -l
 
 # run as 
-# snakemake -s snakefile_morris --use-envmodules --executor slurm --default-resources slurm_account=naiss2023-5-517 slurm_partition=shared --jobs 1
+# snakemake -s snakefile_morris --use-envmodules --executor slurm --default-resources slurm_account=naiss2024-5-581 slurm_partition=shared --jobs 1
 
 import pandas as pd
 import pdb
 
-effect_sizes = [0.9, 0.8, 0.7, 0.6, 0.5]
+effect_sizes = [0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5]
 reps = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 cres_to_run = "all"
