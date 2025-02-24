@@ -9,9 +9,9 @@ import pdb
 effect_sizes = [0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5]
 reps = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-cres_to_run = pd.read_csv("../processed_data/gasperini_target_sites_Jasper.txt")["x"]
-cres_to_run = cres_to_run.to_numpy()
-cres_to_run = cres_to_run[[1]]
+#cres_to_run = pd.read_csv("../processed_data/gasperini_target_sites_Jasper.txt")["x"]
+#cres_to_run = cres_to_run.to_numpy()
+#cres_to_run = cres_to_run[[1]]
 cres_to_run = "all"
 
 rule all:
@@ -24,7 +24,7 @@ rule run_simulation:
         "PDC/23.12",
         "R/4.4.1-cpeGNU-23.12",
     resources:
-        mem_mb=45000,
+        mem_mb=80000,
         runtime=500,
         #cpus_per_task=8,
         slurm_partition="shared",

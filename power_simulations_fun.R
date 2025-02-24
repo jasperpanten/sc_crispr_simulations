@@ -752,7 +752,7 @@ simulate_tapseq_counts_sparse <- function(gene_means, gene_dispersions, cell_siz
     mu <- mu * effect_sizes_gene
     
     # simulate counts
-    sim_counts = as.numeric(rnbinom(n_cells, mu = mu, size = 1 / gene_dispersions))
+    sim_counts = as.numeric(rnbinom(n_cells, mu = mu, size = 1 / gene_dispersions[[g]]))
     # sim_results[g, sim_counts != 0] = sim_counts[sim_counts != 0]
     non_zero_values = sim_counts[sim_counts > 0]
     non_zero_indices = which(sim_counts > 0)
