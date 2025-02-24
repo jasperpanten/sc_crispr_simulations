@@ -7,6 +7,8 @@ library(sceptre)
 
 setwd("/cfs/klemming/projects/supr/lappalainen_lab1/users/panten/projects/sam_simulations/sc_crispr_simulations/")
 
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
 source("./differential_expression_fun.R")
 source("./power_simulations_fun.R")
 
@@ -17,10 +19,10 @@ reps <- as.numeric(args[[2]])
 pert_here <- as.character(args[[3]])
 repetition <- as.numeric(args[[4]])
 
-#effect_size <- 0.5
-#reps <- 10
-#pert_here <- "chr1.7428_top_two"
-#repetition <- 1
+# effect_size <- 0.5
+# reps <- 10
+# pert_here <- "chr1.7428_top_two"
+# repetition <- 1
 
 print(effect_size)
 print(reps)

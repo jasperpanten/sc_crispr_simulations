@@ -503,8 +503,8 @@ simulate_pert_object_real_pooled <- function(sce, pert_genes, effect_size,
   sim_object <- simulate_tapseq_counts_sparse(gene_means = rowData(sce)[, "mean"],
                                               gene_dispersions = rowData(sce)[, "dispersion"],
                                               cell_size_factors = colData(sce)[, "size_factors"],
-                                              effect_size_mat = es_mat)
-
+                                              effect_size_mat = es_mat, 
+                                              gene_ids = rownames(sce))
 
   sim_object <- SingleCellExperiment(assays = list(counts = sim_object), rowData = rowData(sce),
                                      colData = colData(sce))

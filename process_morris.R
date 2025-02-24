@@ -296,3 +296,5 @@ assays(morris_dataset_1_filtered_empty) <- list()
 
 saveRDS(morris_dataset_1_filtered, "../data/morris_small_screen_processed.rds")
 saveRDS(morris_dataset_1_filtered_empty, "../data/morris_small_screen_processed_empty.rds")
+
+test <- readRDS("../data/morris_small_screen_processed_empty.rds")

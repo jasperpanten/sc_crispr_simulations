@@ -4,6 +4,7 @@ library(tidyverse)
 library(SingleCellExperiment)
 
 setwd(paste0(dirname(rstudioapi::getSourceEditorContext()$path)))
+setwd("../")
 
 # Gasperini data
 raw_data_dir_gasp = "./data/"
@@ -105,7 +106,8 @@ altExps(sce_gasperini_subset)[["cre_pert"]] <- altExps(sce_gasperini_subset)[["c
 
 saveRDS(sce_gasperini_subset, "./sce_gasperini_subset.rds")
 
-perturbations_sam <- read_csv("~/Desktop/dosage_paper/gasperini_target_sites_Jasper_long.txt")[[1]]
+#perturbations_sam <- read.csv("~/Desktop/dosage_paper/gasperini_target_sites_Jasper_long.txt", header = F)[[1]]
+perturbations_sam <- read.csv("~/Desktop/gasperini_target_sites_Jasper.txt", header = F)[[1]]
 perturbations_sam_possible <- c(paste0(perturbations_sam, "_top_two"), paste0(perturbations_sam, "_second_two"))
 perturbations_sam_existing <- perturbations_sam_possible[perturbations_sam_possible %in% rownames(altExps(sce_gasperini)[["cre_pert"]])]
 cells_use <- colSums(counts(altExps(sce_gasperini)[["cre_pert"]][perturbations_sam_existing, ])) > 0

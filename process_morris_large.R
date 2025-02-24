@@ -305,11 +305,57 @@ for (i in c(1, 2, 3, 4)){
 
 ## aggregate data
 
+fit_negbinom_deseq2 <- function(sce, assay = "counts",
+                                size_factors = c("ratio", "poscounts", "iterate", "libsize"),
+                                fit_type = c("parametric", "local", "mean"),
+                                disp_type = c("dispersion", "dispFit", "dispGeneEst", "dispMAP")) {
+  
+  size_factors <- match.arg(size_factors)
+  fit_type <- match.arg(fit_type)
+  disp_type <- match.arg(disp_type)
+  
+  # check if sce already contains dispersion and raise warning if data will be overwritten
+  present_row_data <- colnames(rowData(sce)) %in% c("mean", "dispersion", "disp_outlier_deseq2")
+  present_col_data <- colnames(colData(sce)) == "size_factors"
+  if (any(present_row_data, present_col_data)) {
+    warning("Dispersion data found in sce, will overwrite values", call. = FALSE)
+  }
+  
+  # create DESeq2 object containing count data
+  dds <- DESeqDataSetFromMatrix(countData = assay(sce, assay),
+                                colData = colData(sce),
+                                design = ~ 1)
+  
+  # compute size factors
+  if (size_factors == "libsize") {
+    total_umis <- colSums(assay(dds, assay))
+    manual_size_factors <- total_umis / mean(total_umis)
+    sizeFactors(dds) <- manual_size_factors
+  } else {
+    dds <- estimateSizeFactors(dds, type = size_factors)
+  }
+  
+  # estimate dispersion
+  dds <- estimateDispersions(dds, fitType = fit_type)
+  
+  # add mean expression, dispersion and cell size factors to rowData and colData of sce
+  rowData(sce)[, "mean"] <- rowData(dds)[, "baseMean"]
+  rowData(sce)[, "dispersion"] <- rowData(dds)[, disp_type]
+  rowData(sce)[, "disp_outlier_deseq2"] <- rowData(dds)[, "dispOutlier"]
+  colData(sce)[, "size_factors"] <- sizeFactors(dds)
+  
+  # store dispersion function in sce
+  # metadata(sce)[["dispersionFunction"]] <- dispersionFunction(dds)
+  
+  return(sce)
+  
+}
+
 data_list <- lapply(1:4, function(i){readRDS(paste0("../data/morris_largescreen_processed_empty_", i, ".rds"))})
 data <- do.call("cbind", data_list)
 
-data <- morris_dataset_1_filtered[rowSums(counts(data)) > 20, ]
+data <- data[rowSums(counts(data)) > 20, ]
 data <- fit_negbinom_deseq2(data, size_factors = "ratio", fit_type = "parametric")
 data <- data[!is.na(rowData(data)$dispersion), ]
 
-saveRDS(data, "../data/morris_largescreen_processed_full_empty.rds")
+saveRDS(data, "../data/morris_largescreen_processed_full_empty_new.rds")

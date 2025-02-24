@@ -1,7 +1,7 @@
 library(tidyr)
 library(sceptre)
 
-setwd("/cfs/klemming/projects/supr/lappalainen_lab1/users/panten/projects/sam_simulations/sc_crispr_simulations/")
+setwd("~/Desktop/PostDoc_TL_Lab/Projects/Sam/sc_crispr_simulations/")
 
 source("./differential_expression_fun.R")
 source("./power_simulations_fun.R")
@@ -11,7 +11,7 @@ reps <- 10
 
 data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
 
-# split across perturbations: 
+# split across perturbation../data/GSE120861_50k_reference_cells.rds# split across perturbations: 
 
 output <- simulate_diff_expr(data_here_test,
                              effect_size = effect_size,
