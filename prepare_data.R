@@ -282,7 +282,7 @@ library(EnsDb.Hsapiens.v86)
 library(tidyverse)
 library(sceptre)
 
-#data_here <- readRDS("../data/sce_gasperini_sam.rds")
+data_here <- readRDS("../data/sce_gasperini_sam.rds")
 # data_here <- readRDS("../data/sce_gasperini_subset.rds")
 
 #perturbation_test <- c("chr1.7428_top_two", "chr1.9538_top_two")
@@ -297,14 +297,14 @@ library(sceptre)
 
 #saveRDS(data_here_test, "../data/sce_gasperini_sam_dispersions_test.rds")
 # data_here_test <- readRDS("../data/sce_gasperini_sam_dispersions.rds")
-# 
+#
 # genes(EnsDb.Hsapiens.v86) %>% data.frame() %>% dplyr::select("seqnames", "start", "end", "gene_id") %>% rename("id" = "gene_id") -> gene_coordinates
 # data_here_test <- data_here_test[rownames(data_here_test) %in% gene_coordinates$id, ]
-# 
+#
 # row_data_temp <- rowData(data_here_test) %>% data.frame() %>% left_join(gene_coordinates) %>% column_to_rownames("id")
 # rowRanges(data_here_test) <- makeGRangesFromDataFrame(data.frame(seqnames = row_data_temp$seqnames, start = row_data_temp$start, end = row_data_temp$end, row.names = rownames(row_data_temp)))
 # rowData(data_here_test) <- row_data_temp
-# 
+#
 # saveRDS(data_here_test, "../data/sce_gasperini_sam_finished.rds")
 
 # data_here_test <- readRDS("../data/sce_gasperini_sam_finished.rds")
