@@ -22,7 +22,7 @@ rule run_simulation:
         "R/4.4.1-cpeGNU-23.12",
     resources:
         mem_mb=50000,
-        runtime=360,
+        runtime=600,
         #cpus_per_task=8,
         slurm_partition="shared",
     shell: "Rscript test_run_7.R {wildcards.effect_size} 1 {wildcards.cre} {wildcards.rep}"
